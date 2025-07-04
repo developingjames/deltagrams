@@ -71,8 +71,17 @@ install:
 # Testing
 .PHONY: test
 test:
-	@echo "Running tests..."
-	@go test -v ./...
+	@echo "Running unit tests..."
+	@go test -v ./pkg/... ./internal/...
+
+.PHONY: test-integration
+test-integration:
+	@echo "Running integration tests..."
+	@go test -v ./test/...
+
+.PHONY: test-all
+test-all: test test-integration
+	@echo "All tests completed"
 
 .PHONY: test-race
 test-race:
@@ -124,7 +133,7 @@ clean-all: clean
 
 # Release preparation
 .PHONY: release-prep
-release-prep: clean fmt vet mod-tidy test build-all
+release-prep: clean fmt vet mod-tidy test-all build-all
 	@echo "Release preparation complete"
 
 # Help
@@ -140,7 +149,9 @@ help:
 	@echo "  build-windows  Build for Windows (amd64)"
 	@echo "  dev            Development build"
 	@echo "  install        Install to GOPATH/bin"
-	@echo "  test           Run tests"
+	@echo "  test           Run unit tests"
+	@echo "  test-integration Run integration tests"
+	@echo "  test-all       Run all tests"
 	@echo "  test-race      Run tests with race detection"
 	@echo "  test-coverage  Run tests with coverage report"
 	@echo "  lint           Run linter"

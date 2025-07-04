@@ -34,8 +34,11 @@ jobs:
     - name: Download dependencies
       run: go mod download
     
-    - name: Run tests
+    - name: Run unit tests
       run: make test
+    
+    - name: Run integration tests
+      run: make test-integration
     
     - name: Run tests with race detection
       run: make test-race

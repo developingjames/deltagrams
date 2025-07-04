@@ -4,36 +4,56 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the **deltagrams** repository, which contains specifications and documentation for the mimeogram format - a structured format for exchanging collections of text files from hierarchical directory structures or disparate sources.
+This is the **deltagrams** repository, which contains a Go command-line tool for applying structured file changes using the deltagram format - an advanced evolution of the mimeogram format that supports delta operations.
 
 ## Architecture
 
-The project currently consists of:
-- **mimeogram.md**: The complete format specification for mimeograms, including structure, boundary markers, headers, content guidelines, and processing instructions
-- **LICENSE**: MIT license for the project
+The project is a standard Go application with the following structure:
+- **cmd/deltagram/**: Main CLI application
+- **pkg/**: Reusable packages (parser, operations, clipboard)
+- **test/integration/**: Integration tests
+- **internal/testutil/**: Test utilities  
+- **deltagram_prompt.md**: Complete format specification and LLM instructions for deltagrams
+- **Makefile**: Standard build automation
+- **LICENSE**: MIT license
 
-## Mimeogram Format Key Points
+## Deltagram Format Key Points
 
-When working with mimeograms in this repository:
+When working with deltagrams in this repository:
 
 ### Structure Requirements
-- Parts separated by boundary markers: `--====MIMEOGRAM_{uuid}====`
+- Parts separated by boundary markers: `--====DELTAGRAM_{uuid}====` or `--====MIMEOGRAM_{uuid}====` (backward compatible)
 - Final boundary must end with `====--`
 - UUID must be exactly 32 lowercase hexadecimal characters
-- Each part requires `Content-Location` and `Content-Type` headers
+- Each part requires `Content-Location`, `Content-Type`, and optionally `Delta-Operation` headers
+
+### Delta Operations Supported
+- **create**: Create new files
+- **delete**: Delete existing files  
+- **copy**: Copy files to new locations
+- **move**: Move/rename files
+- **content**: Modify file content using unified diff format
 
 ### Content Guidelines
-- Message parts use `Content-Location: mimeogram://message`
+- Message parts use `Content-Location: deltagram://message`
 - File parts use original filesystem paths or URLs
 - Content normalized to UTF-8 with Unix (LF) line endings
-- Always validate the five key points before delivering mimeograms (boundaries, UUID format, headers, line endings, no placeholders)
+- Content operations use standard unified diff format (`@@` hunks with `+`, `-`, ` ` prefixes)
 
 ### Processing Notes
-- Only provide mimeogram responses when explicitly requested
-- Use artifacts/canvases for mimeogram output when available
-- Treat mimeograms as plain text rather than Markdown when writing to artifacts
-- Preserve original file paths unless explicitly asked to change them
+- Operations are applied in the order they appear in the deltagram
+- Only provide deltagram responses when explicitly requested
+- Use artifacts/canvases for deltagram output when available
+- Treat deltagrams as plain text rather than Markdown when writing to artifacts
+- Always validate format before delivering deltagrams
 
 ## Development Notes
 
-This appears to be a specification/documentation project rather than a traditional software project. There are no build scripts, dependency files, or code to compile. Changes would primarily involve updating the mimeogram specification or adding new documentation files.
+This is a production Go project with:
+- **Standard Go project layout** following community conventions
+- **Comprehensive test suite** with unit and integration tests
+- **Cross-platform builds** for Linux, macOS, Windows
+- **CI/CD pipelines** using GitHub Actions
+- **Makefile automation** for common development tasks
+
+Use `make help` to see available build targets. The main executable is built to `bin/deltagram`.

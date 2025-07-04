@@ -14,7 +14,8 @@
       "Bash(go mod:*)",
       "Bash(go test:*)",
       "Bash(make:*)",
-      "Bash(./bin/deltagram:*)"
+      "Bash(./bin/deltagram:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }
