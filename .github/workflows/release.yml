@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -30,14 +32,27 @@ jobs:
     - name: Build for all platforms
       run: make build-all
     
-    - name: Create release archives
+    - name: Generate checksums
       run: |
         cd bin
-        tar -czf deltagram-linux-amd64.tar.gz deltagram-linux-amd64
-        tar -czf deltagram-linux-arm64.tar.gz deltagram-linux-arm64
-        tar -czf deltagram-darwin-amd64.tar.gz deltagram-darwin-amd64
-        tar -czf deltagram-darwin-arm64.tar.gz deltagram-darwin-arm64
-        zip deltagram-windows-amd64.zip deltagram-windows-amd64.exe
+        sha256sum deltagram-linux-amd64 > deltagram-linux-amd64.sha256
+        sha256sum deltagram-linux-arm64 > deltagram-linux-arm64.sha256
+        sha256sum deltagram-darwin-amd64 > deltagram-darwin-amd64.sha256
+        sha256sum deltagram-darwin-arm64 > deltagram-darwin-arm64.sha256
+        sha256sum deltagram-windows-amd64.exe > deltagram-windows-amd64.exe.sha256
+        
+        # Create combined checksums file
+        cat *.sha256 > checksums.txt
+    
+    - name: Attest build artifacts
+      uses: actions/attest-build-provenance@v1
+      with:
+        subject-path: |
+          bin/deltagram-linux-amd64
+          bin/deltagram-linux-arm64
+          bin/deltagram-darwin-amd64
+          bin/deltagram-darwin-arm64
+          bin/deltagram-windows-amd64.exe
     
     - name: Generate changelog
       id: changelog
@@ -53,12 +68,38 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          bin/deltagram-linux-amd64.tar.gz
-          bin/deltagram-linux-arm64.tar.gz
-          bin/deltagram-darwin-amd64.tar.gz
-          bin/deltagram-darwin-arm64.tar.gz
-          bin/deltagram-windows-amd64.zip
-        body: ${{ steps.changelog.outputs.CHANGELOG }}
+          bin/deltagram-linux-amd64
+          bin/deltagram-linux-arm64
+          bin/deltagram-darwin-amd64
+          bin/deltagram-darwin-arm64
+          bin/deltagram-windows-amd64.exe
+          bin/deltagram-linux-amd64.sha256
+          bin/deltagram-linux-arm64.sha256
+          bin/deltagram-darwin-amd64.sha256
+          bin/deltagram-darwin-arm64.sha256
+          bin/deltagram-windows-amd64.exe.sha256
+          bin/checksums.txt
+        body: |
+          ${{ steps.changelog.outputs.CHANGELOG }}
+          
+          ## Download and Verification
+          
+          Download the binary for your platform directly from the assets below. No need to extract archives!
+          
+          To verify the integrity of your download:
+          ```bash
+          # Download the binary and its checksum
+          curl -LO https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/deltagram-linux-amd64
+          curl -LO https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/deltagram-linux-amd64.sha256
+          
+          # Verify the checksum
+          sha256sum -c deltagram-linux-amd64.sha256
+          
+          # Make executable
+          chmod +x deltagram-linux-amd64
+          ```
+          
+          All binaries are cryptographically signed and attested for supply chain security.
         draft: false
         prerelease: false
       env:
