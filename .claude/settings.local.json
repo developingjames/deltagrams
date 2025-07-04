@@ -18,7 +18,8 @@
       "Bash(mv:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(./test_build version)"
+      "Bash(./test_build version)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": []
   }

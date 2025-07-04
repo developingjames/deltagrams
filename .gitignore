@@ -31,8 +31,6 @@ go.work.sum
 bin/
 dist/
 build/
-deltagram
-deltagram.exe
 
 # Editor/IDE
 .idea/
