@@ -3,8 +3,8 @@ package operations
 import (
 	"testing"
 
-	"deltagram/internal/testutil"
-	"deltagram/pkg/parser"
+	"github.com/developingjames/deltagrams/internal/testutil"
+	"github.com/developingjames/deltagrams/pkg/parser"
 )
 
 func TestContentHandler_Apply(t *testing.T) {

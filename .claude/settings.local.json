@@ -15,7 +15,10 @@
       "Bash(go test:*)",
       "Bash(make:*)",
       "Bash(./bin/deltagram:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(./test_build version)"
     ],
     "deny": []
   }

@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"deltagram/pkg/parser"
+	"github.com/developingjames/deltagrams/pkg/parser"
 )
 
 // FileSystem abstracts file system operations for testing

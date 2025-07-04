@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"deltagram/pkg/parser"
+	"github.com/developingjames/deltagrams/pkg/parser"
 )
 
 // ContentHandler handles content modification operations using unified diff

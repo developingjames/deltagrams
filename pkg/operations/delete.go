@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"deltagram/pkg/parser"
+	"github.com/developingjames/deltagrams/pkg/parser"
 )
 
 // DeleteHandler handles file deletion operations

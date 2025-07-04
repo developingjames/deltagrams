@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"deltagram/pkg/parser"
+	"github.com/developingjames/deltagrams/pkg/parser"
 )
 
 // CreateHandler handles file creation operations

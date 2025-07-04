@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"deltagram/internal/testutil"
-	"deltagram/pkg/operations"
-	"deltagram/pkg/parser"
+	"github.com/developingjames/deltagrams/internal/testutil"
+	"github.com/developingjames/deltagrams/pkg/operations"
+	"github.com/developingjames/deltagrams/pkg/parser"
 )
 
 func TestIntegration_FullDeltagramWorkflow(t *testing.T) {

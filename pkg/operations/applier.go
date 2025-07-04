@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"deltagram/pkg/parser"
+	"github.com/developingjames/deltagrams/pkg/parser"
 )
 
 // DefaultApplier implements the Applier interface
