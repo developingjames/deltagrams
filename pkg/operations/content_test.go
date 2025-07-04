@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/developingjames/deltagrams/internal/testutil"
@@ -78,6 +79,65 @@ func TestContentHandler_Apply_FileNotExists(t *testing.T) {
 	err := handler.Apply(fs, "/base", part)
 	if err == nil {
 		t.Error("Expected error for nonexistent file, got none")
+	}
+	
+	expectedMsg := "cannot apply content operation to non-existent file"
+	if !strings.Contains(err.Error(), expectedMsg) {
+		t.Errorf("Expected error message to contain %q, got: %v", expectedMsg, err)
+	}
+}
+
+func TestContentHandler_Apply_HunkBeyondFileEnd(t *testing.T) {
+	handler := NewContentHandler()
+	fs := testutil.NewMockFileSystem()
+	
+	// Create a short file
+	originalContent := "line 1\nline 2"
+	fs.AddFile("/base/short.txt", []byte(originalContent))
+	
+	// Try to apply diff that references line 10
+	part := parser.DeltagramPart{
+		ContentLocation: "short.txt",
+		ContentType:     "application/x-deltagram-content; charset=utf-8; linesep=LF",
+		DeltaOperation:  "content",
+		Content:         "@@ -10,1 +10,1 @@\n-nonexistent\n+replacement",
+	}
+
+	err := handler.Apply(fs, "/base", part)
+	if err == nil {
+		t.Error("Expected error for hunk beyond file end, got none")
+	}
+	
+	expectedMsg := "hunk refers to line 10 but file only has 2 lines"
+	if !strings.Contains(err.Error(), expectedMsg) {
+		t.Errorf("Expected error message to contain %q, got: %v", expectedMsg, err)
+	}
+}
+
+func TestContentHandler_Apply_RemoveLineBeyondFileEnd(t *testing.T) {
+	handler := NewContentHandler()
+	fs := testutil.NewMockFileSystem()
+	
+	// Create a short file
+	originalContent := "line 1\nline 2"
+	fs.AddFile("/base/short.txt", []byte(originalContent))
+	
+	// Try to remove more lines than exist
+	part := parser.DeltagramPart{
+		ContentLocation: "short.txt",
+		ContentType:     "application/x-deltagram-content; charset=utf-8; linesep=LF",
+		DeltaOperation:  "content",
+		Content:         "@@ -1,5 +1,1 @@\n-line 1\n-line 2\n-line 3\n-line 4\n-line 5\n+single line",
+	}
+
+	err := handler.Apply(fs, "/base", part)
+	if err == nil {
+		t.Error("Expected error for removing too many lines, got none")
+	}
+	
+	expectedMsg := "diff attempts to remove line 3 but file only has 2 lines"
+	if !strings.Contains(err.Error(), expectedMsg) {
+		t.Errorf("Expected error message to contain %q, got: %v", expectedMsg, err)
 	}
 }
 

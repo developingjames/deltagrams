@@ -40,6 +40,18 @@ Omitting any required header renders the part invalid.
 
 ### Delta Operations
 
+#### Operation Selection Guidelines
+
+**CRITICAL**: Always choose the correct operation type:
+
+- **Use `create`** for new files that don't exist
+- **Use `content`** ONLY for modifying existing files  
+- **Never use `content` on non-existent files** - this will cause runtime errors
+
+**File Existence Check**: Before using `content` operation, ensure the target file exists in the current project state. If uncertain, use `create` operation instead.
+
+**Content Accuracy Check**: Verify that the unified diff matches the actual current content of the target file. Line numbers and content must correspond exactly to avoid application errors.
+
 #### Content Modifications
 For `Delta-Operation: content`, the body contains line-based delta operations:
 
@@ -210,8 +222,10 @@ Before delivering any deltagram, **always verify these six points**:
    - Do not output placeholder UUIDs like `aaaaaaaa...` or `bbbbbbbb...`.
    - Always generate valid, unique UUIDs for production deltagrams.
 
-6. **Valid Delta Operations**
+**6. Valid Delta Operations**
    - Content deltas must use proper unified diff format.
+   - **Line Number Validation**: Verify that all hunk headers (`@@ -start,count +start,count @@`) reference valid line numbers within the target file's actual length
+   - **Content Matching**: Ensure that context lines (prefixed with ` `) exactly match the current file content at the specified line numbers
    - File operation syntax must be correct (+++ for additions, --- for deletions/sources).
    - Hunk headers must accurately reflect line numbers and counts.
    - All referenced files must exist or be created within the same deltagram.
@@ -226,3 +240,5 @@ Deltagrams provide several advantages over full file transmission:
 4. **Conflict Detection**: Easier to identify and resolve conflicting changes.
 5. **Version Control Friendly**: Delta format aligns with git diff output.
 6. **Selective Application**: Individual changes can be applied or rejected independently.
+
+**Always validate that delta operations can be applied successfully before generating the deltagram.**

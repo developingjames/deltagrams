@@ -29,7 +29,7 @@ func (h *ContentHandler) Apply(fs FileSystem, baseDir string, part parser.Deltag
 	
 	// Check if file exists
 	if _, err := fs.Stat(filePath); os.IsNotExist(err) {
-		return fmt.Errorf("file does not exist: %s", part.ContentLocation)
+		return fmt.Errorf("cannot apply content operation to non-existent file: %s (use 'create' operation instead)", part.ContentLocation)
 	}
 	
 	// Read existing file
@@ -73,6 +73,9 @@ func (h *ContentHandler) applyUnifiedDiff(original, diff string) (string, error)
 			
 			// Copy lines up to the hunk start
 			for originalIndex < hunk.OldStart-1 {
+				if originalIndex >= len(originalLines) {
+					return "", fmt.Errorf("hunk refers to line %d but file only has %d lines", hunk.OldStart, len(originalLines))
+				}
 				result = append(result, originalLines[originalIndex])
 				originalIndex++
 			}
@@ -92,6 +95,9 @@ func (h *ContentHandler) applyUnifiedDiff(original, diff string) (string, error)
 					result = append(result, hunkLine[1:])
 				case '-':
 					// Remove line (skip it)
+					if originalIndex >= len(originalLines) {
+						return "", fmt.Errorf("diff attempts to remove line %d but file only has %d lines", originalIndex+1, len(originalLines))
+					}
 					originalIndex++
 				case ' ':
 					// Context line (unchanged)
