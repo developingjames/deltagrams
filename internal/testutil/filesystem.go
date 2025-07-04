@@ -160,7 +160,7 @@ func (fs *MockFileSystem) Stat(name string) (os.FileInfo, error) {
 		return &mockFileInfo{name: filepath.Base(name), isDir: true}, nil
 	}
 	
-	return nil, fmt.Errorf("file not found: %s", name)
+	return nil, os.ErrNotExist
 }
 
 // Open opens a file in the mock file system
