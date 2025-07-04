@@ -10,7 +10,11 @@
       "Bash(rm:*)",
       "Bash(./deltagram:*)",
       "Bash(mkdir:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(go mod:*)",
+      "Bash(go test:*)",
+      "Bash(make:*)",
+      "Bash(./bin/deltagram:*)"
     ],
     "deny": []
   }

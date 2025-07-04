@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"fmt"
@@ -6,19 +6,16 @@ import (
 	"strings"
 )
 
-type DeltagramPart struct {
-	ContentLocation string
-	ContentType     string
-	DeltaOperation  string
-	Content         string
+// DefaultParser implements the Parser interface
+type DefaultParser struct{}
+
+// NewParser creates a new default parser
+func NewParser() Parser {
+	return &DefaultParser{}
 }
 
-type Deltagram struct {
-	UUID  string
-	Parts []DeltagramPart
-}
-
-func parseDeltagram(content string) (*Deltagram, error) {
+// Parse parses a deltagram string into a Deltagram struct
+func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 	// Normalize line endings to LF
 	content = strings.ReplaceAll(content, "\r\n", "\n")
 	content = strings.ReplaceAll(content, "\r", "\n")
@@ -70,7 +67,7 @@ func parseDeltagram(content string) (*Deltagram, error) {
 			}
 		}
 
-		parsedPart, err := parsePart(part)
+		parsedPart, err := p.parsePart(part)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing part %d: %v", i+1, err)
 		}
@@ -81,7 +78,7 @@ func parseDeltagram(content string) (*Deltagram, error) {
 	return deltagram, nil
 }
 
-func parsePart(partContent string) (*DeltagramPart, error) {
+func (p *DefaultParser) parsePart(partContent string) (*DeltagramPart, error) {
 	// Trim leading/trailing whitespace
 	partContent = strings.TrimSpace(partContent)
 	lines := strings.Split(partContent, "\n")

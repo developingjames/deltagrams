@@ -1,4 +1,4 @@
-package main
+package clipboard
 
 import (
 	"fmt"
@@ -7,7 +7,21 @@ import (
 	"strings"
 )
 
-func readClipboard() (string, error) {
+// Reader defines the interface for reading from clipboard
+type Reader interface {
+	Read() (string, error)
+}
+
+// DefaultReader implements clipboard reading for multiple platforms
+type DefaultReader struct{}
+
+// NewReader creates a new clipboard reader
+func NewReader() Reader {
+	return &DefaultReader{}
+}
+
+// Read reads content from the system clipboard
+func (r *DefaultReader) Read() (string, error) {
 	var cmd *exec.Cmd
 	
 	switch runtime.GOOS {
