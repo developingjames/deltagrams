@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(go mod init:*)",
+      "Bash(curl:*)",
+      "Bash(sudo tar:*)",
+      "Bash(go build:*)",
+      "Bash(./deltagram)",
+      "Bash(go run:*)",
+      "Bash(rm:*)",
+      "Bash(./deltagram:*)",
+      "Bash(mkdir:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}
