@@ -1,135 +1,246 @@
 # Deltagrams
 
-In this conversation, we will use **deltagrams** for exchanging collections of
-file changes and operations from a hierarchical directory structure. Below
-are instructions on how to understand and process deltagrams.
+## Quick-Start Checklist for LLMs
+
+**Follow these steps every time you generate a deltagram:**
+
+1. **Select the correct operation for each file:**
+   - **New file or uncertain if exists** → Use `create`
+   - **File definitely exists and you know its exact content** → Use `content`
+   - **When in doubt** → Use `create`
+
+2. **Generate a valid UUID:**
+   - Must be exactly 32 lowercase hexadecimal characters (0-9, a-f)
+   - Example: `083f1e1306624ef4a246c23193d3fdd7`
+
+3. **Size limit:**
+   - Each deltagram must be ≤ 4,000 characters
+   - Split into multiple batches if needed
+
+4. **Always include a message part:**
+   - `Content-Location: deltagram://message`
+   - Summarize intent and batch info if applicable
+
+5. **File parts must be plain text:**
+   - No Markdown formatting in file content
+
+6. **Validate before output:**
+   - Check boundaries, UUIDs, headers, and operations
+
+7. All deltagrams must be generated as artifacts. Never output deltagram content directly in chat.
+
+## Common Mistakes to Avoid
+
+1. **Using `content` on non-existent files**
+   - Error: "cannot apply content operation to non-existent file"
+   - Solution: Use `create` instead
+
+2. **Markdown in file parts**
+   - File content must be plain text, not Markdown
+
+3. **Invalid UUIDs**
+   - Must be 32 lowercase hex characters only
+   - No uppercase, no non-hex characters
+
+4. **Exceeding size limits**
+   - Split into multiple batches if over 4,000 characters
+
+5. **Missing required headers**
+   - All parts need `Content-Location` and `Content-Type`
+   - Non-message parts need `Delta-Operation`
+
+6. **Wrong final boundary**
+   - Must end with `====--` (two trailing hyphens)
+
+7. Using `content` without verifying file state**
+   - Error: "diff attempts to remove line X but file only has Y lines"
+   - Solution: Check document contents or use `create` instead
+   - **Rule: Use `create` when changing >50% of file content**
+
+---
 
 ## Format Specification
 
-### Structure
-- A deltagram consists of one or more parts separated by boundary markers.
-- Each part contains headers followed by delta operations.
-- Parts are separated by boundary lines starting with `--`.
-- The final boundary must repeat the same ==== before the two hyphens: ====--. So the full final line is always --====DELTAGRAM_{uuid}====--.
+### Structure Overview
+- Parts separated by boundary markers: `--====DELTAGRAM_{uuid}====`
+- Final boundary ends with `====--`
+- Each part has headers followed by content
+- Operations applied in specific order
 
 ### Boundary Markers
-- Format: `--====DELTAGRAM_{uuid}====`
-    - `uuid` is a 32-character hexadecimal UUID, conforming to IETF RFC 4122.
-    - Non-hexadecimal or malformed UUIDs (e.g., containing letters beyond f or
-      incorrect length) are invalid and may cause parsing errors.
-- Examples:
-    - Initial/Partitional: `--====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====`
-    - Final: `--====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====--`
+- **Format:** `--====DELTAGRAM_{uuid}====`
+- **UUID:** Exactly 32 lowercase hexadecimal characters
+- **Final boundary:** `--====DELTAGRAM_{uuid}====--`
 
-### Headers
-Each part must include:
-1. `Content-Location`:
-   - For optional messages: `deltagram://message`
-   - For file operations: original filesystem path or URL
-2. `Content-Type`: Operation type and metadata
-   - For content deltas: `application/x-deltagram-content; charset=utf-8; linesep=LF`
-   - For file operations: `application/x-deltagram-fileop; charset=utf-8`
-3. `Delta-Operation`: The type of delta operation
-   - `content`: Content modifications (add/delete/replace lines)
-   - `create`: Create new file
-   - `delete`: Delete file
-   - `move`: Move/rename file
-   - `copy`: Copy file
-
-Omitting any required header renders the part invalid.
-
-### Delta Operations
-
-#### Operation Selection Guidelines
-
-**CRITICAL**: Always choose the correct operation type:
-
-- **Use `create`** for new files that don't exist
-- **Use `content`** ONLY for modifying existing files  
-- **Never use `content` on non-existent files** - this will cause runtime errors
-
-**File Existence Check**: Before using `content` operation, ensure the target file exists in the current project state. If uncertain, use `create` operation instead.
-
-**Content Accuracy Check**: Verify that the unified diff matches the actual current content of the target file. Line numbers and content must correspond exactly to avoid application errors.
-
-#### Content Modifications
-For `Delta-Operation: content`, the body contains line-based delta operations:
-
+**Example:**
 ```
-@@ -start_line,count +start_line,count @@
--deleted line content
-+added line content
- unchanged line content (context)
+--====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====
+--====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====--
 ```
 
-Operations:
-- `-` prefix: Delete this line
-- `+` prefix: Add this line
-- ` ` prefix: Context line (unchanged)
-- `@@ -old_start,old_count +new_start,new_count @@`: Hunk header
+### Required Headers
 
-#### File Operations
-For file operations, the body contains operation-specific data:
+**All parts must include:**
+- `Content-Location`: Path or `deltagram://message`
+- `Content-Type`: Operation type and metadata
 
-**Create File** (`Delta-Operation: create`):
+**Non-message parts must also include:**
+- `Delta-Operation`: The operation type
+
+**Header Examples:**
 ```
-+++ /path/to/new/file.txt
+Content-Location: src/main.py
+Content-Type: application/x-deltagram-content; charset=utf-8; linesep=LF
+Delta-Operation: content
+```
+
+## Operation Selection Guide
+
+### When to Use Each Operation
+
+**Use `create` when:**
+- Creating a new file
+- Uncertain if file exists
+- **Replacing >50% of file content**
+- **When in doubt, always use `create`**
+
+**Use `content` when:**
+- File definitely exists
+- Making small, specific edits (<50% of content)
+- **You've verified exact current content from documents**
+
+### Before Using `content` Operations
+- **Check document contents**: Verify exact line counts and content
+- **For major changes**: Use `create` instead of complex diffs
+- **When uncertain**: Always prefer `create` over `content`
+
+**Use `delete` when:**
+- Removing an existing file
+
+**Use `move` when:**
+- Renaming or moving a file
+
+**Use `copy` when:**
+- Duplicating a file to a new location
+
+### Operation Formats
+
+#### Create File (`create`)
+```
+Content-Location: path/to/file.txt
+Content-Type: application/x-deltagram-fileop; charset=utf-8
+Delta-Operation: create
+
++++ path/to/file.txt
 file content here
 ```
 
-**Delete File** (`Delta-Operation: delete`):
+#### Modify Content (`content`)
 ```
---- /path/to/file.txt
-```
+Content-Location: path/to/file.txt
+Content-Type: application/x-deltagram-content; charset=utf-8; linesep=LF
+Delta-Operation: content
 
-**Move/Rename File** (`Delta-Operation: move`):
-```
---- /old/path/file.txt
-+++ /new/path/file.txt
-```
-
-**Copy File** (`Delta-Operation: copy`):
-```
---- /source/path/file.txt
-+++ /destination/path/file.txt
+@@ -2,3 +2,4 @@
+ unchanged line
+-removed line
++added line
+ unchanged line
 ```
 
-### Content
-- Follows headers after a blank line.
-- Normalized to UTF-8 character set.
-- Normalized to Unix (LF) line endings.
-- Delta operations use unified diff format for content changes.
+#### Delete File (`delete`)
+```
+Content-Location: path/to/file.txt
+Content-Type: application/x-deltagram-fileop; charset=utf-8
+Delta-Operation: delete
 
-## Interpretation Guidelines
+--- path/to/file.txt
+```
 
-### Messages
-- Parts with `Content-Location: deltagram://message` contain human messages.
-- These messages provide context about the changes or may be a general
-  response to a previous assistant turn.
+#### Move/Rename File (`move`)
+```
+Content-Location: old/path/file.txt
+Content-Type: application/x-deltagram-fileop; charset=utf-8
+Delta-Operation: move
 
-### File Parts
-- Represent changes to text files from a filesystem or URL.
-- Content-Location paths may be:
-  - Relative paths (e.g., `src/main.py`)
-  - Absolute paths (e.g., `/home/user/project/main.py`)
-  - URLs (e.g., `https://example.com/file.txt`)
-- Paths maintain their hierarchy even in the flat bundle format.
+--- old/path/file.txt
++++ new/path/file.txt
+```
 
-### Delta Application Order
-1. File deletions are applied first
-2. File moves/renames are applied second
-3. File copies are applied third  
-4. File creations are applied fourth
-5. Content modifications are applied last
+#### Copy File (`copy`)
+```
+Content-Location: source/path/file.txt
+Content-Type: application/x-deltagram-fileop; charset=utf-8
+Delta-Operation: copy
 
-## Example
+--- source/path/file.txt
++++ destination/path/file.txt
+```
+
+## Unified Diff Format (for `content` operations)
+
+### Hunk Header
+```
+@@ -old_start,old_count +new_start,new_count @@
+```
+
+### Line Prefixes
+- `+` Add this line
+- `-` Remove this line
+- ` ` (space) Context line (unchanged)
+
+### Example
+```
+@@ -1,5 +1,6 @@
+ import os
++import sys
+ 
+ def main():
+-    print("Hello")
++    print("Hello, world!")
+     return 0
+```
+
+## Batching for Large Changes
+
+### When to Split
+- Individual deltagram exceeds 4,000 characters
+- Logical grouping of related changes
+- Performance considerations
+
+### Batching Rules
+- Each batch must be a complete, valid deltagram
+- Include batch info in message part
+- Apply batches in sequence order
+- Same file can appear in multiple batches
+
+### Message Format for Batches
+```
+Content-Location: deltagram://message
+Content-Type: text/plain; charset=utf-8; linesep=LF
+
+Batch 1 of 3: Core module updates
+Implementing authentication system changes.
+Apply batches in order.
+```
+
+## Application Order
+
+Operations are applied in this sequence:
+1. **Delete** files
+2. **Move/rename** files
+3. **Copy** files
+4. **Create** new files
+5. **Modify content** of existing files
+
+## Complete Example
 
 ```
 --====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====
 Content-Location: deltagram://message
 Content-Type: text/plain; charset=utf-8; linesep=LF
 
-Added logging functionality and fixed bug in main function.
+Adding logging functionality and fixing main function return value.
 --====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====
 Content-Location: src/logger.py
 Content-Type: application/x-deltagram-fileop; charset=utf-8
@@ -145,7 +256,7 @@ class Logger:
         self.logger.setLevel(logging.INFO)
         
         handler = logging.StreamHandler(sys.stdout)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
     
@@ -173,72 +284,47 @@ Delta-Operation: content
 --====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====--
 ```
 
-In this example:
-1. The message part explains the purpose of the changes.
-2. The first delta creates a new logger.py file.
-3. The second delta modifies main.py to add logging and fix the return type.
+## Final Validation Checklist
 
-## Processing Instructions
+**Before outputting any deltagram, verify:**
 
-When working with deltagrams:
-1. Read the message first, if there is one, to understand context.
-2. Apply deltas in the specified order (deletions, moves, copies, creations, content changes).
-3. Examine file paths to understand project structure changes.
-4. Maintain the same format when responding with file changes.
-5. Preserve original paths (in `Content-Location`) unless explicitly asked to change them.
-6. Use unified diff format for content modifications.
+1. **Boundary markers are correct:**
+   - Start: `--====DELTAGRAM_{uuid}====`
+   - End: `--====DELTAGRAM_{uuid}====--`
 
-*Important*:
-- Only provide responses as deltagrams when the user explicitly requests them as such. Otherwise, provide responses as you normally would.
-- If you have an artifacts or canvases mechanism available, then write deltagrams via this mechanism. Otherwise, display them as normal responses.
-- When writing a deltagram to an artifact or canvas, treat it as plain text rather than Markdown.
-- Always validate that delta operations can be applied successfully before generating the deltagram.
+2. **UUID is valid:**
+   - Exactly 32 lowercase hex characters (0-9, a-f)
 
-## ✅ Final Output Validation for Deltagrams
+3. **All required headers present:**
+   - `Content-Location`
+   - `Content-Type`
+   - `Delta-Operation` (for non-message parts)
 
-Before delivering any deltagram, **always verify these six points**:
+4. **Content format is correct:**
+   - Unified diff format for `content` operations
+   - Proper file operation syntax
+   - No Markdown in file parts
 
-1. **Boundary Markers**
-   - Each part must start with: `--====DELTAGRAM_{uuid}====`
-   - The **final boundary** must end with `====--` (two trailing hyphens).
-     Example: `--====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====--`
+5. **Size under limit:**
+   - Total deltagram ≤ 4,000 characters
 
-2. **UUID Format**
-   - Every `{uuid}` must be exactly 32 lowercase hexadecimal characters (0–9, a–f).
-   - No non-hex letters, no uppercase, no extra or missing characters.
+6. **Operations are valid:**
+   - Line numbers match actual file content
+   - Referenced files exist or are created in same deltagram
 
-3. **Required Headers**
-   - Each part must contain:
-     - `Content-Location:`
-     - `Content-Type:`
-     - `Delta-Operation:` (for non-message parts)
-   - All must appear before the blank line and content.
+## Output Guidelines
 
-4. **Line Endings**
-   - All lines must match the specified `linesep` (e.g., `linesep=LF` for Unix line endings).
-   - No stray `\r` or mixed line endings.
+- **Only provide deltagrams when explicitly requested**
+- **Use artifacts/canvases if available**
+- **Treat deltagrams as plain text, not Markdown**
+- **Always validate before delivery**
+- **If uncertain about file existence, use `create` and explain in message**
 
-5. **No Placeholders**
-   - Do not output placeholder UUIDs like `aaaaaaaa...` or `bbbbbbbb...`.
-   - Always generate valid, unique UUIDs for production deltagrams.
+## Benefits of Deltagrams
 
-**6. Valid Delta Operations**
-   - Content deltas must use proper unified diff format.
-   - **Line Number Validation**: Verify that all hunk headers (`@@ -start,count +start,count @@`) reference valid line numbers within the target file's actual length
-   - **Content Matching**: Ensure that context lines (prefixed with ` `) exactly match the current file content at the specified line numbers
-   - File operation syntax must be correct (+++ for additions, --- for deletions/sources).
-   - Hunk headers must accurately reflect line numbers and counts.
-   - All referenced files must exist or be created within the same deltagram.
-
-## Efficiency Benefits
-
-Deltagrams provide several advantages over full file transmission:
-
-1. **Reduced Size**: Only changes are transmitted, not entire files.
-2. **Clear Intent**: Each change is explicitly documented with its purpose.
-3. **Atomic Operations**: Related changes are grouped together logically.
-4. **Conflict Detection**: Easier to identify and resolve conflicting changes.
-5. **Version Control Friendly**: Delta format aligns with git diff output.
-6. **Selective Application**: Individual changes can be applied or rejected independently.
-
-**Always validate that delta operations can be applied successfully before generating the deltagram.**
+1. **Reduced size** - Only changes transmitted
+2. **Clear intent** - Each change documented
+3. **Atomic operations** - Related changes grouped
+4. **Conflict detection** - Easier to identify issues
+5. **Version control friendly** - Aligns with git diff
+6. **Selective application** - Individual changes can be applied/rejected
