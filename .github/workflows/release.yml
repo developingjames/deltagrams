@@ -63,9 +63,7 @@ jobs:
         git log --oneline --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD~1)..HEAD >> CHANGELOG.md || echo "- Initial release" >> CHANGELOG.md
         
         # Correct multi-line output for GitHub Actions
-        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
-        cat CHANGELOG.md >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        printf "CHANGELOG<<EOF\n%s\nEOF\n" "$(cat CHANGELOG.md)" >> $GITHUB_OUTPUT
     
     - name: Create Release
       uses: softprops/action-gh-release@v2
