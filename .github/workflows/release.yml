@@ -62,12 +62,10 @@ jobs:
         echo "## Changes" > CHANGELOG.md
         git log --oneline --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD~1)..HEAD >> CHANGELOG.md || echo "- Initial release" >> CHANGELOG.md
         
-        # Use JSON encoding to safely handle multiline content
-        {
-          echo 'CHANGELOG<<CHANGELOG_EOF'
-          cat CHANGELOG.md
-          echo 'CHANGELOG_EOF'
-        } >> $GITHUB_OUTPUT
+        # Correct multi-line output for GitHub Actions
+        echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+        cat CHANGELOG.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
     
     - name: Create Release
       uses: softprops/action-gh-release@v2
