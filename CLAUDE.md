@@ -22,9 +22,9 @@ The project is a standard Go application with the following structure:
 When working with deltagrams in this repository:
 
 ### Structure Requirements
-- Parts separated by boundary markers: `--====DELTAGRAM_{uuid}====` or `--====MIMEOGRAM_{uuid}====` (backward compatible)
+- Parts separated by boundary markers: `--====DELTAGRAM_{identifier}====`
 - Final boundary must end with `====--`
-- UUID must be exactly 32 lowercase hexadecimal characters
+- Identifier must be at least 8 alphanumeric characters (a-z, A-Z, 0-9) for reasonable uniqueness
 - Each part requires `Content-Location`, `Content-Type`, and optionally `Delta-Operation` headers
 
 ### Delta Operations Supported

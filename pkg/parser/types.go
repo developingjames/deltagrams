@@ -10,7 +10,7 @@ type DeltagramPart struct {
 
 // Deltagram represents a complete deltagram with all its parts
 type Deltagram struct {
-	UUID  string
+	UUID  string // Boundary identifier (historically UUID, now more flexible alphanumeric)
 	Parts []DeltagramPart
 }
 

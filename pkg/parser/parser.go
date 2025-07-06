@@ -20,27 +20,22 @@ func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 	content = strings.ReplaceAll(content, "\r\n", "\n")
 	content = strings.ReplaceAll(content, "\r", "\n")
 
-	// Extract UUID from first boundary
-	boundaryRegex := regexp.MustCompile(`--====(?:DELTAGRAM|MIMEOGRAM)_([a-f0-9]{32})====`)
+	// Extract boundary identifier from first boundary (more flexible than strict UUID)
+	boundaryRegex := regexp.MustCompile(`--====DELTAGRAM_([a-zA-Z0-9]+)====`)
 	matches := boundaryRegex.FindStringSubmatch(content)
 	if len(matches) < 2 {
 		return nil, fmt.Errorf("invalid deltagram format: missing or malformed boundary")
 	}
 	
-	uuid := matches[1]
+	identifier := matches[1]
 	
-	// Validate UUID format (32 lowercase hex characters)
-	if !regexp.MustCompile(`^[a-f0-9]{32}$`).MatchString(uuid) {
-		return nil, fmt.Errorf("invalid UUID format: %s", uuid)
+	// Validate identifier format (alphanumeric, at least 8 characters for reasonable uniqueness)
+	if !regexp.MustCompile(`^[a-zA-Z0-9]{8,}$`).MatchString(identifier) {
+		return nil, fmt.Errorf("invalid boundary identifier format: %s (must be at least 8 alphanumeric characters)", identifier)
 	}
 
-	// Split by boundary markers (support both DELTAGRAM and MIMEOGRAM formats)
-	var boundaryPattern string
-	if strings.Contains(content, "DELTAGRAM_") {
-		boundaryPattern = fmt.Sprintf(`--====DELTAGRAM_%s====`, uuid)
-	} else {
-		boundaryPattern = fmt.Sprintf(`--====MIMEOGRAM_%s====`, uuid)
-	}
+	// Split by boundary markers
+	boundaryPattern := fmt.Sprintf(`--====DELTAGRAM_%s====`, identifier)
 	parts := strings.Split(content, boundaryPattern)
 	
 	if len(parts) < 2 {
@@ -53,7 +48,7 @@ func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 	}
 
 	deltagram := &Deltagram{
-		UUID:  uuid,
+		UUID:  identifier,
 		Parts: make([]DeltagramPart, 0),
 	}
 
@@ -113,9 +108,9 @@ func (p *DefaultParser) parsePart(partContent string) (*DeltagramPart, error) {
 	}
 	
 	// For message parts, Delta-Operation is optional
-	isMessage := contentLocation == "mimeogram://message" || contentLocation == "deltagram://message"
+	isMessage := contentLocation == "deltagram://message"
 	if !isMessage && deltaOperation == "" {
-		// Default to CREATE for backward compatibility with mimeogram format
+		// Default to CREATE for backward compatibility
 		deltaOperation = "create"
 	}
 	

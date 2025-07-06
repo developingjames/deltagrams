@@ -9,9 +9,10 @@
    - **File definitely exists and you know its exact content** → Use `content`
    - **When in doubt** → Use `create`
 
-2. **Generate a valid UUID:**
-   - Must be exactly 32 lowercase hexadecimal characters (0-9, a-f)
-   - Example: `083f1e1306624ef4a246c23193d3fdd7`
+2. **Generate a valid boundary identifier:**
+   - Must be at least 8 alphanumeric characters (a-z, A-Z, 0-9)
+   - Can be a UUID (32 hex chars) or other format like `voice456sample789012345678901234ef`
+   - Example: `083f1e1306624ef4a246c23193d3fdd7` or `voice456sample789012345678901234ef`
 
 3. **Size limit:**
    - Each deltagram must be ≤ 4,000 characters
@@ -25,7 +26,7 @@
    - No Markdown formatting in file content
 
 6. **Validate before output:**
-   - Check boundaries, UUIDs, headers, and operations
+   - Check boundaries, identifiers, headers, and operations
 
 7. All deltagrams must be generated as artifacts. Never output deltagram content directly in chat.
 
@@ -38,9 +39,9 @@
 2. **Markdown in file parts**
    - File content must be plain text, not Markdown
 
-3. **Invalid UUIDs**
-   - Must be 32 lowercase hex characters only
-   - No uppercase, no non-hex characters
+3. **Invalid boundary identifiers**
+   - Must be at least 8 alphanumeric characters (a-z, A-Z, 0-9)
+   - Can be UUIDs (32 hex chars) or other formats for flexibility
 
 4. **Exceeding size limits**
    - Split into multiple batches if over 4,000 characters
@@ -68,13 +69,14 @@
 - Operations applied in specific order
 
 ### Boundary Markers
-- **Format:** `--====DELTAGRAM_{uuid}====`
-- **UUID:** Exactly 32 lowercase hexadecimal characters
-- **Final boundary:** `--====DELTAGRAM_{uuid}====--`
+- **Format:** `--====DELTAGRAM_{identifier}====`
+- **Identifier:** At least 8 alphanumeric characters (a-z, A-Z, 0-9)
+- **Final boundary:** `--====DELTAGRAM_{identifier}====--`
 
 **Example:**
 ```
 --====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====
+--====DELTAGRAM_voice456sample789012345678901234ef====
 --====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====--
 ```
 
@@ -289,11 +291,11 @@ Delta-Operation: content
 **Before outputting any deltagram, verify:**
 
 1. **Boundary markers are correct:**
-   - Start: `--====DELTAGRAM_{uuid}====`
-   - End: `--====DELTAGRAM_{uuid}====--`
+   - Start: `--====DELTAGRAM_{identifier}====`
+   - End: `--====DELTAGRAM_{identifier}====--`
 
-2. **UUID is valid:**
-   - Exactly 32 lowercase hex characters (0-9, a-f)
+2. **Identifier is valid:**
+   - At least 8 alphanumeric characters (a-z, A-Z, 0-9)
 
 3. **All required headers present:**
    - `Content-Location`

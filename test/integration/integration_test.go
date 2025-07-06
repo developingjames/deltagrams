@@ -215,49 +215,6 @@ Delta-Operation: delete
 	}
 }
 
-func TestIntegration_MimeogramBackwardCompatibility(t *testing.T) {
-	parser := parser.NewParser()
-	fs := testutil.NewMockFileSystem()
-	applier := operations.NewApplier(fs)
-	
-	fs.AddDir("/base/src")
-	
-	// Old mimeogram format without Delta-Operation headers
-	mimeogramContent := `--====MIMEOGRAM_0123456789abcdef0123456789abcdef====
-Content-Location: mimeogram://message
-Content-Type: text/plain; charset=utf-8; linesep=LF
-
-This is a backward compatibility test.
---====MIMEOGRAM_0123456789abcdef0123456789abcdef====
-Content-Location: src/hello.py
-Content-Type: text/x-python; charset=utf-8; linesep=LF
-
-def hello():
-    print("Hello from mimeogram!")
---====MIMEOGRAM_0123456789abcdef0123456789abcdef====--`
-
-	deltagram, err := parser.Parse(mimeogramContent)
-	if err != nil {
-		t.Fatalf("Failed to parse mimeogram: %v", err)
-	}
-
-	err = applier.Apply(deltagram, "/base")
-	if err != nil {
-		t.Fatalf("Failed to apply mimeogram: %v", err)
-	}
-
-	// Check file was created with default create operation
-	content, err := fs.ReadFile("/base/src/hello.py")
-	if err != nil {
-		t.Fatalf("Failed to read created file: %v", err)
-	}
-
-	expected := `def hello():
-    print("Hello from mimeogram!")`
-	if string(content) != expected {
-		t.Errorf("Expected content %q, got %q", expected, string(content))
-	}
-}
 
 func TestIntegration_ComplexDiffOperations(t *testing.T) {
 	parser := parser.NewParser()
@@ -369,5 +326,57 @@ Delta-Operation: content
 	}
 	if !strings.Contains(modified, "MUL: {a} * {b} = {result}") {
 		t.Error("Multiply method should have correct implementation")
+	}
+}
+
+func TestIntegration_FlexibleBoundaryIdentifiers(t *testing.T) {
+	parser := parser.NewParser()
+	fs := testutil.NewMockFileSystem()
+	applier := operations.NewApplier(fs)
+	
+	fs.AddDir("/base/src")
+	
+	// Use the flexible boundary identifier format from the example
+	identifier := "voice456sample789012345678901234ef"
+	deltagramContent := `--====DELTAGRAM_` + identifier + `====
+Content-Location: deltagram://message
+Content-Type: text/plain; charset=utf-8; linesep=LF
+
+Testing flexible boundary identifiers with non-UUID format.
+--====DELTAGRAM_` + identifier + `====
+Content-Location: src/test.py
+Content-Type: application/x-deltagram-fileop; charset=utf-8
+Delta-Operation: create
+
++++ src/test.py
+def test_function():
+    return "success"
+--====DELTAGRAM_` + identifier + `====--`
+
+	deltagram, err := parser.Parse(deltagramContent)
+	if err != nil {
+		t.Fatalf("Failed to parse deltagram with flexible identifier: %v", err)
+	}
+
+	// Verify the identifier was parsed correctly
+	if deltagram.UUID != identifier {
+		t.Errorf("Expected identifier '%s', got '%s'", identifier, deltagram.UUID)
+	}
+
+	err = applier.Apply(deltagram, "/base")
+	if err != nil {
+		t.Fatalf("Failed to apply deltagram with flexible identifier: %v", err)
+	}
+
+	// Check file was created successfully
+	content, err := fs.ReadFile("/base/src/test.py")
+	if err != nil {
+		t.Fatalf("Failed to read created file: %v", err)
+	}
+
+	expected := `def test_function():
+    return "success"`
+	if string(content) != expected {
+		t.Errorf("Expected content %q, got %q", expected, string(content))
 	}
 }

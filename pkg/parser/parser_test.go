@@ -54,53 +54,42 @@ Hello, World!
 	}
 }
 
-func TestParser_Parse_ValidMimeogram(t *testing.T) {
-	parser := NewParser()
-	
-	content := `--====MIMEOGRAM_0123456789abcdef0123456789abcdef====
-Content-Location: test/file.txt
-Content-Type: text/plain; charset=utf-8; linesep=LF
 
-Hello, World!
---====MIMEOGRAM_0123456789abcdef0123456789abcdef====--`
-
-	deltagram, err := parser.Parse(content)
-	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
-	}
-
-	if len(deltagram.Parts) != 1 {
-		t.Errorf("Expected 1 part, got: %d", len(deltagram.Parts))
-	}
-
-	part := deltagram.Parts[0]
-	if part.DeltaOperation != "create" {
-		t.Errorf("Expected default create operation, got: %s", part.DeltaOperation)
-	}
-}
-
-func TestParser_Parse_InvalidUUID(t *testing.T) {
+func TestParser_Parse_FlexibleIdentifiers(t *testing.T) {
 	tests := []struct {
-		name    string
-		content string
+		name       string
+		identifier string
+		shouldPass bool
 	}{
 		{
-			name: "uppercase letters in UUID",
-			content: `--====DELTAGRAM_0123456789ABCDEF0123456789abcdef====
-Content-Location: test/file.txt
-Content-Type: text/plain; charset=utf-8; linesep=LF
-
-Hello, World!
---====DELTAGRAM_0123456789ABCDEF0123456789abcdef====--`,
+			name:       "traditional UUID",
+			identifier: "0123456789abcdef0123456789abcdef",
+			shouldPass: true,
 		},
 		{
-			name: "wrong length UUID",
-			content: `--====DELTAGRAM_0123456789abcdef01234567====
-Content-Location: test/file.txt
-Content-Type: text/plain; charset=utf-8; linesep=LF
-
-Hello, World!
---====DELTAGRAM_0123456789abcdef01234567====--`,
+			name:       "mixed case alphanumeric",
+			identifier: "voice456sample789012345678901234ef",
+			shouldPass: true,
+		},
+		{
+			name:       "uppercase letters",
+			identifier: "0123456789ABCDEF0123456789abcdef",
+			shouldPass: true,
+		},
+		{
+			name:       "shorter valid identifier",
+			identifier: "test1234",
+			shouldPass: true,
+		},
+		{
+			name:       "too short identifier",
+			identifier: "test123",
+			shouldPass: false,
+		},
+		{
+			name:       "invalid characters",
+			identifier: "test-123-456",
+			shouldPass: false,
 		},
 	}
 
@@ -108,12 +97,28 @@ Hello, World!
 	
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := parser.Parse(test.content)
-			if err == nil {
-				t.Error("Expected error for invalid UUID, got none")
-			}
-			if !strings.Contains(err.Error(), "invalid UUID format") && !strings.Contains(err.Error(), "missing or malformed boundary") {
-				t.Errorf("Expected UUID format or boundary error, got: %v", err)
+			content := `--====DELTAGRAM_` + test.identifier + `====
+Content-Location: test/file.txt
+Content-Type: text/plain; charset=utf-8; linesep=LF
+
+Hello, World!
+--====DELTAGRAM_` + test.identifier + `====--`
+
+			deltagram, err := parser.Parse(content)
+			if test.shouldPass {
+				if err != nil {
+					t.Errorf("Expected no error for valid identifier '%s', got: %v", test.identifier, err)
+				}
+				if deltagram.UUID != test.identifier {
+					t.Errorf("Expected identifier '%s', got: %s", test.identifier, deltagram.UUID)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("Expected error for invalid identifier '%s', got none", test.identifier)
+				}
+				if !strings.Contains(err.Error(), "invalid boundary identifier format") && !strings.Contains(err.Error(), "missing or malformed boundary") {
+					t.Errorf("Expected identifier format or boundary error, got: %v", err)
+				}
 			}
 		})
 	}
