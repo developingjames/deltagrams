@@ -10,9 +10,9 @@
    - **When in doubt** → Use `create`
 
 2. **Generate a valid boundary identifier:**
-   - Must be at least 8 alphanumeric characters (a-z, A-Z, 0-9)
-   - Can be a UUID (32 hex chars) or other format like `voice456sample789012345678901234ef`
-   - Example: `083f1e1306624ef4a246c23193d3fdd7` or `voice456sample789012345678901234ef`
+   - Must be at least 8 characters using alphanumeric, underscore, or dash (a-z, A-Z, 0-9, _, -)
+   - Can be a UUID (32 hex chars) or other format like `voice456_sample-789012345678901234ef`
+   - Example: `083f1e1306624ef4a246c23193d3fdd7` or `voice456_sample-789012345678901234ef`
 
 3. **Size limit:**
    - Each deltagram must be ≤ 4,000 characters
@@ -40,7 +40,7 @@
    - File content must be plain text, not Markdown
 
 3. **Invalid boundary identifiers**
-   - Must be at least 8 alphanumeric characters (a-z, A-Z, 0-9)
+   - Must be at least 8 characters using alphanumeric, underscore, or dash (a-z, A-Z, 0-9, _, -)
    - Can be UUIDs (32 hex chars) or other formats for flexibility
 
 4. **Exceeding size limits**
@@ -70,13 +70,13 @@
 
 ### Boundary Markers
 - **Format:** `--====DELTAGRAM_{identifier}====`
-- **Identifier:** At least 8 alphanumeric characters (a-z, A-Z, 0-9)
+- **Identifier:** At least 8 characters using alphanumeric, underscore, or dash (a-z, A-Z, 0-9, _, -)
 - **Final boundary:** `--====DELTAGRAM_{identifier}====--`
 
 **Example:**
 ```
 --====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====
---====DELTAGRAM_voice456sample789012345678901234ef====
+--====DELTAGRAM_voice456_sample-789012345678901234ef====
 --====DELTAGRAM_083f1e1306624ef4a246c23193d3fdd7====--
 ```
 
@@ -295,7 +295,7 @@ Delta-Operation: content
    - End: `--====DELTAGRAM_{identifier}====--`
 
 2. **Identifier is valid:**
-   - At least 8 alphanumeric characters (a-z, A-Z, 0-9)
+   - At least 8 characters using alphanumeric, underscore, or dash (a-z, A-Z, 0-9, _, -)
 
 3. **All required headers present:**
    - `Content-Location`

@@ -21,7 +21,7 @@ func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 	content = strings.ReplaceAll(content, "\r", "\n")
 
 	// Extract boundary identifier from first boundary (more flexible than strict UUID)
-	boundaryRegex := regexp.MustCompile(`--====DELTAGRAM_([a-zA-Z0-9]+)====`)
+	boundaryRegex := regexp.MustCompile(`--====DELTAGRAM_([a-zA-Z0-9_-]+)====`)
 	matches := boundaryRegex.FindStringSubmatch(content)
 	if len(matches) < 2 {
 		return nil, fmt.Errorf("invalid deltagram format: missing or malformed boundary")
@@ -29,9 +29,9 @@ func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 	
 	identifier := matches[1]
 	
-	// Validate identifier format (alphanumeric, at least 8 characters for reasonable uniqueness)
-	if !regexp.MustCompile(`^[a-zA-Z0-9]{8,}$`).MatchString(identifier) {
-		return nil, fmt.Errorf("invalid boundary identifier format: %s (must be at least 8 alphanumeric characters)", identifier)
+	// Validate identifier format (alphanumeric, underscore, dash, at least 8 characters for reasonable uniqueness)
+	if !regexp.MustCompile(`^[a-zA-Z0-9_-]{8,}$`).MatchString(identifier) {
+		return nil, fmt.Errorf("invalid boundary identifier format: %s (must be at least 8 characters using alphanumeric, underscore, or dash)", identifier)
 	}
 
 	// Split by boundary markers

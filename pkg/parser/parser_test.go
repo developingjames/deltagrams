@@ -87,8 +87,28 @@ func TestParser_Parse_FlexibleIdentifiers(t *testing.T) {
 			shouldPass: false,
 		},
 		{
-			name:       "invalid characters",
+			name:       "with underscores",
+			identifier: "test_123_456",
+			shouldPass: true,
+		},
+		{
+			name:       "with dashes",
 			identifier: "test-123-456",
+			shouldPass: true,
+		},
+		{
+			name:       "mixed with underscores and dashes",
+			identifier: "test_123-456_789",
+			shouldPass: true,
+		},
+		{
+			name:       "invalid characters (space)",
+			identifier: "test 123 456",
+			shouldPass: false,
+		},
+		{
+			name:       "invalid characters (special chars)",
+			identifier: "test@123#456",
 			shouldPass: false,
 		},
 	}

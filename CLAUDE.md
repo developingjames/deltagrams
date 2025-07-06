@@ -24,7 +24,7 @@ When working with deltagrams in this repository:
 ### Structure Requirements
 - Parts separated by boundary markers: `--====DELTAGRAM_{identifier}====`
 - Final boundary must end with `====--`
-- Identifier must be at least 8 alphanumeric characters (a-z, A-Z, 0-9) for reasonable uniqueness
+- Identifier must be at least 8 characters using alphanumeric, underscore, or dash (a-z, A-Z, 0-9, _, -) for reasonable uniqueness
 - Each part requires `Content-Location`, `Content-Type`, and optionally `Delta-Operation` headers
 
 ### Delta Operations Supported
