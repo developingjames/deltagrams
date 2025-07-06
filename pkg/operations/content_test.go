@@ -108,7 +108,7 @@ func TestContentHandler_Apply_HunkBeyondFileEnd(t *testing.T) {
 		t.Error("Expected error for hunk beyond file end, got none")
 	}
 	
-	expectedMsg := "hunk refers to line 10 but file only has 2 lines"
+	expectedMsg := "hunk refers to line 10 but file has 2 lines"
 	if !strings.Contains(err.Error(), expectedMsg) {
 		t.Errorf("Expected error message to contain %q, got: %v", expectedMsg, err)
 	}
@@ -135,7 +135,7 @@ func TestContentHandler_Apply_RemoveLineBeyondFileEnd(t *testing.T) {
 		t.Error("Expected error for removing too many lines, got none")
 	}
 	
-	expectedMsg := "diff attempts to remove line 3 but file only has 2 lines"
+	expectedMsg := "line to remove extends beyond file end"
 	if !strings.Contains(err.Error(), expectedMsg) {
 		t.Errorf("Expected error message to contain %q, got: %v", expectedMsg, err)
 	}
@@ -198,5 +198,76 @@ func TestContentHandler_parseHunkHeader(t *testing.T) {
 			t.Errorf("For line %q, expected %+v, got %+v", 
 				test.line, test.expected, result)
 		}
+	}
+}
+
+func TestContentHandler_Apply_MultiHunk(t *testing.T) {
+	handler := NewContentHandler()
+	fs := testutil.NewMockFileSystem()
+	
+	// Create file with content similar to the deltagram issue
+	originalContent := `### Target Lengths by File Type
+- **Core Concept Files**: 800-1,500 words max
+- **Faction/Organization Files**: 1,000-2,000 words max  
+- **Character Files**: 300-800 words max
+- **Technology/System Files**: 600-1,200 words max
+- **Reference/Summary Files**: 500-1,000 words max
+
+### Regular Audits
+- **Quarterly Review**: Check for file bloat and redundancy
+- **Story Relevance**: Cut details that don't serve current or planned narrative
+- **Consolidation Opportunities**: Merge overlapping files`
+	
+	fs.AddFile("/base/test.md", []byte(originalContent))
+	
+	part := parser.DeltagramPart{
+		ContentLocation: "test.md",
+		ContentType:     "application/x-deltagram-content; charset=utf-8; linesep=LF",
+		DeltaOperation:  "content",
+		Content: `@@ -1,5 +1,5 @@
+ ### Target Lengths by File Type
+ - **Core Concept Files**: 800-1,500 words max
+ - **Faction/Organization Files**: 1,000-2,000 words max  
+-- **Character Files**: 300-800 words max
++- **Character Files**: 400-900 words max
+ - **Technology/System Files**: 600-1,200 words max
+@@ -6,0 +6,1 @@
++- **Worldbuilding Index Files**: 300-600 words max
+ - **Reference/Summary Files**: 500-1,000 words max
+@@ -8,3 +9,4 @@
+ ### Regular Audits
+ - **Quarterly Review**: Check for file bloat and redundancy
++- **Monthly Quick Scan**: Identify files exceeding target lengths
+ - **Story Relevance**: Cut details that don't serve current or planned narrative
+ - **Consolidation Opportunities**: Merge overlapping files`,
+	}
+
+	err := handler.Apply(fs, "/base", part)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	// Check file content
+	content, err := fs.ReadFile("/base/test.md")
+	if err != nil {
+		t.Fatalf("Failed to read modified file: %v", err)
+	}
+
+	expected := `### Target Lengths by File Type
+- **Core Concept Files**: 800-1,500 words max
+- **Faction/Organization Files**: 1,000-2,000 words max  
+- **Character Files**: 400-900 words max
+- **Technology/System Files**: 600-1,200 words max
+- **Worldbuilding Index Files**: 300-600 words max
+- **Reference/Summary Files**: 500-1,000 words max
+
+### Regular Audits
+- **Quarterly Review**: Check for file bloat and redundancy
+- **Monthly Quick Scan**: Identify files exceeding target lengths
+- **Story Relevance**: Cut details that don't serve current or planned narrative
+- **Consolidation Opportunities**: Merge overlapping files`
+
+	if string(content) != expected {
+		t.Errorf("Expected content:\n%q\n\nGot:\n%q", expected, string(content))
 	}
 }

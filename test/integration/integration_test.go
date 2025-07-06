@@ -380,3 +380,259 @@ def test_function():
 		t.Errorf("Expected content %q, got %q", expected, string(content))
 	}
 }
+
+func TestIntegration_ContentOperations_MultiHunk(t *testing.T) {
+	fs := testutil.NewMockFileSystem()
+	applier := operations.NewApplier(fs)
+	parser := parser.NewParser()
+
+	// Create initial configuration file
+	initialContent := `# API Configuration Guide
+# Last updated: 2024-01-15
+
+## 🔧 Server Settings
+
+### Connection Limits
+- **Max Connections**: 1000 per server
+- **Connection Pool**: 50-100 connections
+- **Timeout Settings**: 30 seconds default
+- **Retry Attempts**: 3 maximum retries
+- **Buffer Size**: 8KB standard
+
+### Performance Monitoring
+- **Health Checks**: Every 60 seconds
+- **Metrics Collection**: Real-time data gathering
+- **Alert Thresholds**: 95% CPU, 90% memory
+
+## 📊 Database Configuration
+
+### Connection Settings
+- **Primary DB**: PostgreSQL cluster
+- **Read Replicas**: 3 instances minimum
+- **Connection Timeout**: 10 seconds
+- **Query Timeout**: 30 seconds
+
+### Optimization Guidelines
+- **Index Strategy**: Composite indexes preferred
+- **Query Caching**: 1-hour TTL for static data
+- **Batch Processing**: 500 records per batch
+
+## 🔐 Security Configuration
+
+Security settings and authentication rules go here.`
+
+	fs.AddFile("/test/config/api_guide.md", []byte(initialContent))
+
+	// Apply multi-hunk content operations
+	deltagramContent := `--====DELTAGRAM_api_config_update_v2====
+Content-Location: deltagram://message
+Content-Type: text/plain; charset=utf-8; linesep=LF
+
+Updating API configuration with new limits, monitoring features, and security section.
+Changes include: updated connection limits, added real-time monitoring, enhanced security.
+--====DELTAGRAM_api_config_update_v2====
+Content-Location: config/api_guide.md
+Content-Type: application/x-deltagram-content; charset=utf-8; linesep=LF
+Delta-Operation: content
+
+@@ -6,5 +6,5 @@
+ ### Connection Limits
+ - **Max Connections**: 1000 per server
+ - **Connection Pool**: 50-100 connections
+-- **Timeout Settings**: 30 seconds default
++- **Timeout Settings**: 45 seconds default
+ - **Retry Attempts**: 3 maximum retries
+ - **Buffer Size**: 8KB standard
+@@ -11,0 +11,1 @@
+ - **Buffer Size**: 8KB standard
++- **Load Balancing**: Round-robin algorithm
+ 
+@@ -13,3 +14,4 @@
+ ### Performance Monitoring
+ - **Health Checks**: Every 60 seconds
++- **Real-time Alerts**: Instant notification system
+ - **Metrics Collection**: Real-time data gathering
+ - **Alert Thresholds**: 95% CPU, 90% memory
+@@ -30,0 +32,12 @@
+ 
++---
++
++## 🛡️ Enhanced Security Features
++
++### Authentication Methods
++- **OAuth 2.0**: Primary authentication protocol
++- **API Keys**: Secondary access method for services
++- **JWT Tokens**: 15-minute expiration for sessions
++
++### Access Control
++- **Role-based Permissions**: Admin, User, Read-only levels
++- **IP Whitelisting**: Restrict access by network location
++
+ ## 🔐 Security Configuration
+--====DELTAGRAM_api_config_update_v2====--`
+
+	deltagram, err := parser.Parse(deltagramContent)
+	if err != nil {
+		t.Fatalf("Failed to parse deltagram: %v", err)
+	}
+
+	err = applier.Apply(deltagram, "/test")
+	if err != nil {
+		t.Fatalf("Failed to apply deltagram: %v", err)
+	}
+
+	// Verify the content was modified correctly
+	resultContent, err := fs.ReadFile("/test/config/api_guide.md")
+	if err != nil {
+		t.Fatalf("Failed to read modified file: %v", err)
+	}
+
+	result := string(resultContent)
+
+	// Verify key changes were applied
+	if !strings.Contains(result, "- **Timeout Settings**: 45 seconds default") {
+		t.Error("Timeout setting was not updated correctly")
+	}
+	if !strings.Contains(result, "- **Load Balancing**: Round-robin algorithm") {
+		t.Error("Load balancing line was not inserted")
+	}
+	if !strings.Contains(result, "- **Real-time Alerts**: Instant notification system") {
+		t.Error("Real-time alerts line was not inserted")
+	}
+	if !strings.Contains(result, "## 🛡️ Enhanced Security Features") {
+		t.Error("Enhanced security section was not added")
+	}
+	if !strings.Contains(result, "- **OAuth 2.0**: Primary authentication protocol") {
+		t.Error("OAuth authentication line was not added")
+	}
+
+	// Verify structure is maintained
+	if !strings.Contains(result, "## 🔐 Security Configuration") {
+		t.Error("Original security section should still be present")
+	}
+}
+
+func TestIntegration_ContentOperations_LineEndingTolerance(t *testing.T) {
+	fs := testutil.NewMockFileSystem()
+	applier := operations.NewApplier(fs)
+	parser := parser.NewParser()
+
+	// Create file with Windows line endings (CRLF)
+	initialContent := "# Development Setup\r\n\r\n## Prerequisites\r\n- Node.js version 18+\r\n- npm or yarn package manager\r\n- Git for version control\r\n\r\n## Installation Steps\r\nFollow these steps to set up the project.\r\n"
+	fs.AddFile("/test/setup.md", []byte(initialContent))
+
+	// Apply deltagram with Unix line endings (LF)
+	deltagramContent := `--====DELTAGRAM_setup_updates====
+Content-Location: deltagram://message
+Content-Type: text/plain; charset=utf-8; linesep=LF
+
+Updating development setup requirements.
+--====DELTAGRAM_setup_updates====
+Content-Location: setup.md
+Content-Type: application/x-deltagram-content; charset=utf-8; linesep=LF
+Delta-Operation: content
+
+@@ -3,4 +3,5 @@
+ ## Prerequisites
+ - Node.js version 18+
++- Python 3.9+ for build scripts
+ - npm or yarn package manager
+ - Git for version control
+--====DELTAGRAM_setup_updates====--`
+
+	deltagram, err := parser.Parse(deltagramContent)
+	if err != nil {
+		t.Fatalf("Failed to parse deltagram: %v", err)
+	}
+
+	// Should succeed despite line ending differences
+	err = applier.Apply(deltagram, "/test")
+	if err != nil {
+		t.Fatalf("Failed to apply deltagram with mixed line endings: %v", err)
+	}
+
+	// Verify the change was applied
+	resultContent, err := fs.ReadFile("/test/setup.md")
+	if err != nil {
+		t.Fatalf("Failed to read modified file: %v", err)
+	}
+
+	result := string(resultContent)
+	if !strings.Contains(result, "- Python 3.9+ for build scripts") {
+		t.Error("Python requirement was not inserted correctly")
+	}
+}
+
+func TestIntegration_ContentOperations_PureInsertion(t *testing.T) {
+	fs := testutil.NewMockFileSystem()
+	applier := operations.NewApplier(fs)
+	parser := parser.NewParser()
+
+	// Create simple file
+	initialContent := `# Project Changelog
+
+## Version 1.0.0
+- Initial release
+- Basic functionality implemented
+
+## Future Plans
+Upcoming features and improvements.`
+
+	fs.AddFile("/test/CHANGELOG.md", []byte(initialContent))
+
+	// Apply pure insertion (OldCount=0)
+	deltagramContent := `--====DELTAGRAM_changelog_update====
+Content-Location: deltagram://message
+Content-Type: text/plain; charset=utf-8; linesep=LF
+
+Adding new version entry to changelog.
+--====DELTAGRAM_changelog_update====
+Content-Location: CHANGELOG.md
+Content-Type: application/x-deltagram-content; charset=utf-8; linesep=LF
+Delta-Operation: content
+
+@@ -5,0 +5,5 @@
+ - Basic functionality implemented
++
++## Version 1.1.0
++- Added user authentication
++- Improved error handling
++- Performance optimizations
+ 
+ ## Future Plans
+--====DELTAGRAM_changelog_update====--`
+
+	deltagram, err := parser.Parse(deltagramContent)
+	if err != nil {
+		t.Fatalf("Failed to parse deltagram: %v", err)
+	}
+
+	err = applier.Apply(deltagram, "/test")
+	if err != nil {
+		t.Fatalf("Failed to apply pure insertion deltagram: %v", err)
+	}
+
+	// Verify the insertion was applied correctly
+	resultContent, err := fs.ReadFile("/test/CHANGELOG.md")
+	if err != nil {
+		t.Fatalf("Failed to read modified file: %v", err)
+	}
+
+	result := string(resultContent)
+	
+	// Check that new version was inserted
+	if !strings.Contains(result, "## Version 1.1.0") {
+		t.Error("New version section was not inserted")
+	}
+	if !strings.Contains(result, "- Added user authentication") {
+		t.Error("Authentication feature was not added")
+	}
+	
+	// Verify original content is preserved
+	if !strings.Contains(result, "## Version 1.0.0") {
+		t.Error("Original version section was lost")
+	}
+	if !strings.Contains(result, "## Future Plans") {
+		t.Error("Future plans section was lost")
+	}
+}
