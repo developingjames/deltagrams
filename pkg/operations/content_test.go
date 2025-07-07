@@ -108,7 +108,7 @@ func TestContentHandler_Apply_HunkBeyondFileEnd(t *testing.T) {
 		t.Error("Expected error for hunk beyond file end, got none")
 	}
 	
-	expectedMsg := "hunk refers to line 10 but file has 2 lines"
+	expectedMsg := "hunk refers to line 10 but original file has 2 lines"
 	if !strings.Contains(err.Error(), expectedMsg) {
 		t.Errorf("Expected error message to contain %q, got: %v", expectedMsg, err)
 	}
@@ -135,7 +135,7 @@ func TestContentHandler_Apply_RemoveLineBeyondFileEnd(t *testing.T) {
 		t.Error("Expected error for removing too many lines, got none")
 	}
 	
-	expectedMsg := "line to remove extends beyond file end"
+	expectedMsg := "line to remove extends beyond original file"
 	if !strings.Contains(err.Error(), expectedMsg) {
 		t.Errorf("Expected error message to contain %q, got: %v", expectedMsg, err)
 	}

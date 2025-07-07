@@ -9,26 +9,31 @@
    - **File definitely exists and you know its exact content** → Use `content`
    - **When in doubt** → Use `create`
 
-2. **Generate a valid boundary identifier:**
+2. **For `content` operations with multiple hunks:**
+   - **Use original file line numbers** for all hunks
+   - **System automatically handles offsets** - no manual calculation needed
+   - Reference the file as it exists before any changes
+
+3. **Generate a valid boundary identifier:**
    - Must be at least 8 characters using alphanumeric, underscore, or dash (a-z, A-Z, 0-9, _, -)
    - Can be a UUID (32 hex chars) or other format like `voice456_sample-789012345678901234ef`
    - Example: `083f1e1306624ef4a246c23193d3fdd7` or `voice456_sample-789012345678901234ef`
 
-3. **Size limit:**
+4. **Size limit:**
    - Each deltagram must be ≤ 4,000 characters
    - Split into multiple batches if needed
 
-4. **Always include a message part:**
+5. **Always include a message part:**
    - `Content-Location: deltagram://message`
    - Summarize intent and batch info if applicable
 
-5. **File parts must be plain text:**
+6. **File parts must be plain text:**
    - No Markdown formatting in file content
 
-6. **Validate before output:**
+7. **Validate before output:**
    - Check boundaries, identifiers, headers, and operations
 
-7. All deltagrams must be generated as artifacts. Never output deltagram content directly in chat.
+8. All deltagrams must be generated as artifacts. Never output deltagram content directly in chat.
 
 ## Common Mistakes to Avoid
 
@@ -181,6 +186,11 @@ Delta-Operation: copy
 
 ## Unified Diff Format (for `content` operations)
 
+### Automatic Offset Calculation
+**IMPORTANT**: The deltagram system automatically handles line number offsets for multiple hunks. You can reference line numbers from the original file, and the system will automatically calculate where subsequent hunks should be applied after previous changes.
+
+**Example**: If the first hunk adds 3 lines, and your second hunk references line 20 in the original file, the system will automatically apply it at the correct position (line 23 in the modified file).
+
 ### Hunk Header
 ```
 @@ -old_start,old_count +new_start,new_count @@
@@ -202,6 +212,21 @@ Delta-Operation: copy
 +    print("Hello, world!")
      return 0
 ```
+
+### Multiple Hunks with Automatic Offsets
+When creating multiple hunks for the same file, reference the original file line numbers:
+```
+@@ -5,2 +5,3 @@
+ def setup():
++    # Add initialization
+     return True
+
+@@ -10,1 +11,2 @@
+ def main():
++    setup()
+     print("Hello")
+```
+The system automatically adjusts the second hunk's position based on changes from the first hunk.
 
 ## Batching for Large Changes
 
@@ -311,7 +336,7 @@ Delta-Operation: content
    - Total deltagram ≤ 4,000 characters
 
 6. **Operations are valid:**
-   - Line numbers match actual file content
+   - Line numbers reference the original file (automatic offset calculation handles subsequent hunks)
    - Referenced files exist or are created in same deltagram
 
 ## Output Guidelines

@@ -47,10 +47,24 @@ func applyDeltagram() error {
 	fs := operations.NewRealFileSystem()
 	applier := operations.NewApplier(fs)
 
-	// Read deltagram from clipboard
-	content, err := clipboardReader.Read()
-	if err != nil {
-		return fmt.Errorf("failed to read clipboard: %v", err)
+	var content string
+	var err error
+
+	// Check if file path is provided as argument
+	if len(os.Args) > 2 {
+		// Read deltagram from file
+		filePath := os.Args[2]
+		contentBytes, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %v", filePath, err)
+		}
+		content = string(contentBytes)
+	} else {
+		// Read deltagram from clipboard
+		content, err = clipboardReader.Read()
+		if err != nil {
+			return fmt.Errorf("failed to read clipboard: %v", err)
+		}
 	}
 
 	// Parse deltagram
@@ -75,16 +89,17 @@ func applyDeltagram() error {
 }
 
 func showUsage() {
-	fmt.Println("Usage: deltagram <command>")
+	fmt.Println("Usage: deltagram <command> [file]")
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  apply           Apply deltagram from clipboard to current directory")
+	fmt.Println("  apply [file]    Apply deltagram from clipboard or file to current directory")
 	fmt.Println("  version, -v     Show version information")
 	fmt.Println("  help, -h        Show this help message")
 	fmt.Println()
 	fmt.Println("Examples:")
-	fmt.Println("  deltagram apply    # Apply deltagram from clipboard")
-	fmt.Println("  deltagram version  # Show version")
+	fmt.Println("  deltagram apply              # Apply deltagram from clipboard")
+	fmt.Println("  deltagram apply file.txt     # Apply deltagram from file")
+	fmt.Println("  deltagram version            # Show version")
 }
 
 func showVersion() {
