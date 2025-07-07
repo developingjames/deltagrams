@@ -10,10 +10,10 @@ import (
 func TestCreateHandler_Apply(t *testing.T) {
 	handler := NewCreateHandler()
 	fs := testutil.NewMockFileSystem()
-	
+
 	// Ensure directory structure exists
 	fs.AddDir("test")
-	
+
 	part := parser.DeltagramPart{
 		ContentLocation: "test/hello.txt",
 		ContentType:     "text/plain; charset=utf-8; linesep=LF",
@@ -46,10 +46,10 @@ func TestCreateHandler_Apply(t *testing.T) {
 func TestCreateHandler_Apply_NoMarker(t *testing.T) {
 	handler := NewCreateHandler()
 	fs := testutil.NewMockFileSystem()
-	
+
 	// Ensure directory structure exists
 	fs.AddDir("test")
-	
+
 	part := parser.DeltagramPart{
 		ContentLocation: "test/simple.txt",
 		ContentType:     "text/plain; charset=utf-8; linesep=LF",
@@ -76,7 +76,7 @@ func TestCreateHandler_Apply_NoMarker(t *testing.T) {
 
 func TestCreateHandler_CanHandle(t *testing.T) {
 	handler := NewCreateHandler()
-	
+
 	tests := []struct {
 		operation string
 		expected  bool

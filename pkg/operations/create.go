@@ -24,12 +24,12 @@ func (h *CreateHandler) CanHandle(operation string) bool {
 // Apply creates a new file with the specified content
 func (h *CreateHandler) Apply(fs FileSystem, baseDir string, part parser.DeltagramPart) error {
 	filePath := ResolveFilePath(baseDir, part.ContentLocation)
-	
+
 	// Parse create operation content
 	lines := strings.Split(part.Content, "\n")
 	var content string
 	var contentStarted bool
-	
+
 	for _, line := range lines {
 		if strings.HasPrefix(line, "+++") {
 			contentStarted = true
@@ -42,12 +42,12 @@ func (h *CreateHandler) Apply(fs FileSystem, baseDir string, part parser.Deltagr
 			content += line
 		}
 	}
-	
+
 	// If no +++ marker found, use entire content
 	if !contentStarted {
 		content = part.Content
 	}
-	
+
 	// Ensure directory exists
 	if err := fs.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %v", err)

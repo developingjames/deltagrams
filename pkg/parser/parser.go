@@ -26,9 +26,9 @@ func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 	if len(matches) < 2 {
 		return nil, fmt.Errorf("invalid deltagram format: missing or malformed boundary")
 	}
-	
+
 	identifier := matches[1]
-	
+
 	// Validate identifier format (alphanumeric, underscore, dash, at least 8 characters for reasonable uniqueness)
 	if !regexp.MustCompile(`^[a-zA-Z0-9_-]{8,}$`).MatchString(identifier) {
 		return nil, fmt.Errorf("invalid boundary identifier format: %s (must be at least 8 characters using alphanumeric, underscore, or dash)", identifier)
@@ -37,7 +37,7 @@ func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 	// Split by boundary markers
 	boundaryPattern := fmt.Sprintf(`--====DELTAGRAM_%s====`, identifier)
 	parts := strings.Split(content, boundaryPattern)
-	
+
 	if len(parts) < 2 {
 		return nil, fmt.Errorf("invalid deltagram format: no parts found")
 	}
@@ -66,7 +66,7 @@ func (p *DefaultParser) Parse(content string) (*Deltagram, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error parsing part %d: %v", i+1, err)
 		}
-		
+
 		deltagram.Parts = append(deltagram.Parts, *parsedPart)
 	}
 
@@ -77,19 +77,19 @@ func (p *DefaultParser) parsePart(partContent string) (*DeltagramPart, error) {
 	// Trim leading/trailing whitespace
 	partContent = strings.TrimSpace(partContent)
 	lines := strings.Split(partContent, "\n")
-	
+
 	var contentLocation, contentType, deltaOperation string
 	var contentStartIndex int
-	
+
 	// Parse headers
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		if line == "" {
 			contentStartIndex = i + 1
 			break
 		}
-		
+
 		if strings.HasPrefix(line, "Content-Location:") {
 			contentLocation = strings.TrimSpace(strings.TrimPrefix(line, "Content-Location:"))
 		} else if strings.HasPrefix(line, "Content-Type:") {
@@ -98,28 +98,28 @@ func (p *DefaultParser) parsePart(partContent string) (*DeltagramPart, error) {
 			deltaOperation = strings.TrimSpace(strings.TrimPrefix(line, "Delta-Operation:"))
 		}
 	}
-	
+
 	if contentLocation == "" {
 		return nil, fmt.Errorf("missing Content-Location header")
 	}
-	
+
 	if contentType == "" {
 		return nil, fmt.Errorf("missing Content-Type header")
 	}
-	
+
 	// For message parts, Delta-Operation is optional
 	isMessage := contentLocation == "deltagram://message"
 	if !isMessage && deltaOperation == "" {
 		// Default to CREATE for backward compatibility
 		deltaOperation = "create"
 	}
-	
+
 	// Extract content
 	var content string
 	if contentStartIndex < len(lines) {
 		content = strings.Join(lines[contentStartIndex:], "\n")
 	}
-	
+
 	return &DeltagramPart{
 		ContentLocation: contentLocation,
 		ContentType:     contentType,

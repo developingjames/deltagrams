@@ -18,7 +18,7 @@ func NewApplier(fs FileSystem) Applier {
 	applier := &DefaultApplier{
 		fs: fs,
 	}
-	
+
 	// Register default handlers
 	applier.handlers = []OperationHandler{
 		NewCreateHandler(),
@@ -27,7 +27,7 @@ func NewApplier(fs FileSystem) Applier {
 		NewMoveHandler(),
 		NewContentHandler(),
 	}
-	
+
 	return applier
 }
 
@@ -49,12 +49,12 @@ func (a *DefaultApplier) Apply(deltagram *parser.Deltagram, baseDir string) erro
 				break
 			}
 		}
-		
+
 		if handler == nil {
 			// Default to create for backward compatibility
 			handler = NewCreateHandler()
 		}
-		
+
 		if err := handler.Apply(a.fs, baseDir, part); err != nil {
 			return fmt.Errorf("failed to apply %s operation to %s: %v", part.DeltaOperation, part.ContentLocation, err)
 		}

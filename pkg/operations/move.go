@@ -26,7 +26,7 @@ func (h *MoveHandler) Apply(fs FileSystem, baseDir string, part parser.Deltagram
 	// Parse move operation content to get source and destination
 	lines := strings.Split(part.Content, "\n")
 	var sourcePath, destPath string
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "---") {
@@ -35,19 +35,19 @@ func (h *MoveHandler) Apply(fs FileSystem, baseDir string, part parser.Deltagram
 			destPath = strings.TrimSpace(strings.TrimPrefix(line, "+++"))
 		}
 	}
-	
+
 	if sourcePath == "" || destPath == "" {
 		return fmt.Errorf("invalid move operation: missing source or destination path")
 	}
-	
+
 	sourceFullPath := ResolveFilePath(baseDir, sourcePath)
 	destFullPath := ResolveFilePath(baseDir, destPath)
-	
+
 	// Ensure destination directory exists
 	if err := fs.MkdirAll(filepath.Dir(destFullPath), 0755); err != nil {
 		return fmt.Errorf("failed to create destination directory: %v", err)
 	}
-	
+
 	if err := fs.Rename(sourceFullPath, destFullPath); err != nil {
 		return fmt.Errorf("failed to move file: %v", err)
 	}

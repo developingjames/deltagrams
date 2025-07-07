@@ -7,7 +7,7 @@ import (
 
 func TestParser_Parse_ValidDeltagram(t *testing.T) {
 	parser := NewParser()
-	
+
 	content := `--====DELTAGRAM_0123456789abcdef0123456789abcdef====
 Content-Location: deltagram://message
 Content-Type: text/plain; charset=utf-8; linesep=LF
@@ -53,7 +53,6 @@ Hello, World!
 		t.Errorf("Expected create operation, got: %s", filePart.DeltaOperation)
 	}
 }
-
 
 func TestParser_Parse_FlexibleIdentifiers(t *testing.T) {
 	tests := []struct {
@@ -114,7 +113,7 @@ func TestParser_Parse_FlexibleIdentifiers(t *testing.T) {
 	}
 
 	parser := NewParser()
-	
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			content := `--====DELTAGRAM_` + test.identifier + `====
@@ -146,7 +145,7 @@ Hello, World!
 
 func TestParser_Parse_MissingHeaders(t *testing.T) {
 	parser := NewParser()
-	
+
 	content := `--====DELTAGRAM_0123456789abcdef0123456789abcdef====
 Content-Location: test/file.txt
 
@@ -164,7 +163,7 @@ Hello, World!
 
 func TestParser_Parse_NoBoundary(t *testing.T) {
 	parser := NewParser()
-	
+
 	content := `Content-Location: test/file.txt
 Content-Type: text/plain; charset=utf-8; linesep=LF
 

@@ -16,7 +16,7 @@ import (
 func TestAutomaticOffsetCalculation(t *testing.T) {
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
-	
+
 	// Original file content - simulates a typical file an LLM would work with
 	originalContent := `package main
 
@@ -97,7 +97,7 @@ Delta-Operation: content
 	// Apply the deltagram
 	fs := operations.NewRealFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	err = applier.Apply(deltagram, tempDir)
 	if err != nil {
 		t.Fatalf("Failed to apply deltagram: %v", err)
@@ -152,7 +152,7 @@ func helper() {
 // removals, additions, and mixed operations across multiple hunks
 func TestOffsetCalculationWithComplexChanges(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Original file with various sections
 	originalContent := `# Project Configuration
 
@@ -224,7 +224,7 @@ Delta-Operation: content
 
 	fs := operations.NewRealFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	err = applier.Apply(deltagram, tempDir)
 	if err != nil {
 		t.Fatalf("Failed to apply complex deltagram: %v", err)
@@ -271,7 +271,7 @@ format = json`
 // using original file line numbers to verify automatic offset calculation works correctly
 func TestMultipleHunksOriginalLineNumbers(t *testing.T) {
 	tempDir := t.TempDir()
-	
+
 	// Generic document content for testing
 	originalContent := `# Software Component Documentation
 #component #system #architecture
@@ -401,7 +401,7 @@ Delta-Operation: content
 
 	fs := operations.NewRealFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	err = applier.Apply(deltagram, tempDir)
 	if err != nil {
 		t.Fatalf("Failed to apply deltagram: %v", err)

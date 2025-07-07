@@ -29,9 +29,9 @@ func NewMockFileSystem() *MockFileSystem {
 func (fs *MockFileSystem) AddFile(path string, content []byte) {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-	
+
 	fs.files[path] = content
-	
+
 	// Ensure directories exist
 	dir := filepath.Dir(path)
 	for dir != "." && dir != "/" {
@@ -51,7 +51,7 @@ func (fs *MockFileSystem) AddDir(path string) {
 func (fs *MockFileSystem) GetFiles() map[string][]byte {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
-	
+
 	result := make(map[string][]byte)
 	for k, v := range fs.files {
 		result[k] = make([]byte, len(v))
@@ -72,12 +72,12 @@ func (fs *MockFileSystem) FileExists(path string) bool {
 func (fs *MockFileSystem) ReadFile(filename string) ([]byte, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
-	
+
 	content, exists := fs.files[filename]
 	if !exists {
 		return nil, fmt.Errorf("file not found: %s", filename)
 	}
-	
+
 	result := make([]byte, len(content))
 	copy(result, content)
 	return result, nil
@@ -87,13 +87,13 @@ func (fs *MockFileSystem) ReadFile(filename string) ([]byte, error) {
 func (fs *MockFileSystem) WriteFile(filename string, data []byte, perm os.FileMode) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-	
+
 	// Ensure directory exists
 	dir := filepath.Dir(filename)
 	if dir != "." && dir != "/" && !fs.dirs[dir] {
 		return fmt.Errorf("directory does not exist: %s", dir)
 	}
-	
+
 	fs.files[filename] = make([]byte, len(data))
 	copy(fs.files[filename], data)
 	return nil
@@ -103,11 +103,11 @@ func (fs *MockFileSystem) WriteFile(filename string, data []byte, perm os.FileMo
 func (fs *MockFileSystem) Remove(name string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-	
+
 	if _, exists := fs.files[name]; !exists {
 		return fmt.Errorf("file not found: %s", name)
 	}
-	
+
 	delete(fs.files, name)
 	return nil
 }
@@ -116,18 +116,18 @@ func (fs *MockFileSystem) Remove(name string) error {
 func (fs *MockFileSystem) Rename(oldpath, newpath string) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-	
+
 	content, exists := fs.files[oldpath]
 	if !exists {
 		return fmt.Errorf("file not found: %s", oldpath)
 	}
-	
+
 	// Ensure destination directory exists
 	dir := filepath.Dir(newpath)
 	if dir != "." && dir != "/" && !fs.dirs[dir] {
 		return fmt.Errorf("directory does not exist: %s", dir)
 	}
-	
+
 	fs.files[newpath] = content
 	delete(fs.files, oldpath)
 	return nil
@@ -137,7 +137,7 @@ func (fs *MockFileSystem) Rename(oldpath, newpath string) error {
 func (fs *MockFileSystem) MkdirAll(path string, perm os.FileMode) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
-	
+
 	// Create all parent directories
 	current := path
 	for current != "." && current != "/" {
@@ -151,15 +151,15 @@ func (fs *MockFileSystem) MkdirAll(path string, perm os.FileMode) error {
 func (fs *MockFileSystem) Stat(name string) (os.FileInfo, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
-	
+
 	if _, exists := fs.files[name]; exists {
 		return &mockFileInfo{name: filepath.Base(name), isDir: false}, nil
 	}
-	
+
 	if fs.dirs[name] {
 		return &mockFileInfo{name: filepath.Base(name), isDir: true}, nil
 	}
-	
+
 	return nil, os.ErrNotExist
 }
 

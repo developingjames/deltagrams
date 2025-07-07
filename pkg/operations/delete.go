@@ -23,7 +23,7 @@ func (h *DeleteHandler) CanHandle(operation string) bool {
 // Apply deletes the specified file
 func (h *DeleteHandler) Apply(fs FileSystem, baseDir string, part parser.DeltagramPart) error {
 	filePath := ResolveFilePath(baseDir, part.ContentLocation)
-	
+
 	if err := fs.Remove(filePath); err != nil {
 		if os.IsNotExist(err) {
 			fmt.Printf("Warning: File %s does not exist (already deleted)\n", part.ContentLocation)

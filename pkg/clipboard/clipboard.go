@@ -23,7 +23,7 @@ func NewReader() Reader {
 // Read reads content from the system clipboard
 func (r *DefaultReader) Read() (string, error) {
 	var cmd *exec.Cmd
-	
+
 	switch runtime.GOOS {
 	case "windows":
 		cmd = exec.Command("powershell", "-command", "Get-Clipboard")

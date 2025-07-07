@@ -10,11 +10,11 @@ import (
 func TestCopyHandler_Apply(t *testing.T) {
 	handler := NewCopyHandler()
 	fs := testutil.NewMockFileSystem()
-	
+
 	// Create source file
 	fs.AddFile("/base/source.txt", []byte("Original content\nLine 2"))
 	fs.AddDir("/base/dest")
-	
+
 	part := parser.DeltagramPart{
 		ContentLocation: "dest/copied.txt",
 		ContentType:     "application/x-deltagram-fileop; charset=utf-8",
@@ -52,7 +52,7 @@ func TestCopyHandler_Apply(t *testing.T) {
 func TestCopyHandler_Apply_SourceNotExists(t *testing.T) {
 	handler := NewCopyHandler()
 	fs := testutil.NewMockFileSystem()
-	
+
 	part := parser.DeltagramPart{
 		ContentLocation: "dest/copied.txt",
 		ContentType:     "application/x-deltagram-fileop; charset=utf-8",
@@ -69,7 +69,7 @@ func TestCopyHandler_Apply_SourceNotExists(t *testing.T) {
 func TestCopyHandler_Apply_InvalidContent(t *testing.T) {
 	handler := NewCopyHandler()
 	fs := testutil.NewMockFileSystem()
-	
+
 	part := parser.DeltagramPart{
 		ContentLocation: "dest/copied.txt",
 		ContentType:     "application/x-deltagram-fileop; charset=utf-8",
@@ -85,7 +85,7 @@ func TestCopyHandler_Apply_InvalidContent(t *testing.T) {
 
 func TestCopyHandler_CanHandle(t *testing.T) {
 	handler := NewCopyHandler()
-	
+
 	tests := []struct {
 		operation string
 		expected  bool

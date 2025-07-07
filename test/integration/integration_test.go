@@ -14,7 +14,7 @@ func TestIntegration_FullDeltagramWorkflow(t *testing.T) {
 	parser := parser.NewParser()
 	fs := testutil.NewMockFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	// Add initial file structure
 	fs.AddDir("/base/src")
 	fs.AddFile("/base/src/original.py", []byte(`def hello():
@@ -23,7 +23,7 @@ func TestIntegration_FullDeltagramWorkflow(t *testing.T) {
 
 def main():
     hello()`))
-	
+
 	// Complete deltagram with all operation types
 	deltagramContent := `--====DELTAGRAM_0123456789abcdef0123456789abcdef====
 Content-Location: deltagram://message
@@ -88,7 +88,7 @@ Delta-Operation: move
 
 	// Verify results
 	files := fs.GetFiles()
-	
+
 	// Check original file was modified
 	originalContent, exists := files["/base/src/original.py"]
 	if !exists {
@@ -104,7 +104,7 @@ def main():
     print("Starting application...")
     hello()`
 	if string(originalContent) != expectedOriginal {
-		t.Errorf("Original file content mismatch.\nExpected:\n%s\n\nGot:\n%s", 
+		t.Errorf("Original file content mismatch.\nExpected:\n%s\n\nGot:\n%s",
 			expectedOriginal, string(originalContent))
 	}
 
@@ -122,7 +122,7 @@ def main():
 	if exists {
 		t.Error("Original new module should not exist after move")
 	}
-	
+
 	renamedContent, exists := files["/base/src/renamed_module.py"]
 	if !exists {
 		t.Error("Renamed module should exist")
@@ -134,7 +134,7 @@ def main():
     def get_value(self):
         return self.value`
 	if string(renamedContent) != expectedRenamed {
-		t.Errorf("Renamed module content mismatch.\nExpected:\n%s\n\nGot:\n%s", 
+		t.Errorf("Renamed module content mismatch.\nExpected:\n%s\n\nGot:\n%s",
 			expectedRenamed, string(renamedContent))
 	}
 
@@ -148,7 +148,7 @@ func TestIntegration_ErrorHandling(t *testing.T) {
 	parser := parser.NewParser()
 	fs := testutil.NewMockFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	// Deltagram that tries to modify non-existent file
 	deltagramContent := `--====DELTAGRAM_0123456789abcdef0123456789abcdef====
 Content-Location: nonexistent.txt
@@ -175,11 +175,11 @@ func TestIntegration_DeleteOperation(t *testing.T) {
 	parser := parser.NewParser()
 	fs := testutil.NewMockFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	// Add initial files
 	fs.AddFile("/base/file1.txt", []byte("content1"))
 	fs.AddFile("/base/file2.txt", []byte("content2"))
-	
+
 	deltagramContent := `--====DELTAGRAM_0123456789abcdef0123456789abcdef====
 Content-Location: file1.txt
 Content-Type: application/x-deltagram-fileop; charset=utf-8
@@ -199,28 +199,27 @@ Delta-Operation: delete
 	}
 
 	files := fs.GetFiles()
-	
+
 	// file1.txt should be deleted
 	if fs.FileExists("/base/file1.txt") {
 		t.Error("file1.txt should have been deleted")
 	}
-	
+
 	// file2.txt should still exist
 	if !fs.FileExists("/base/file2.txt") {
 		t.Error("file2.txt should still exist")
 	}
-	
+
 	if len(files) != 1 {
 		t.Errorf("Expected 1 file remaining, got %d", len(files))
 	}
 }
 
-
 func TestIntegration_ComplexDiffOperations(t *testing.T) {
 	parser := parser.NewParser()
 	fs := testutil.NewMockFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	// Create a more complex file for testing
 	originalContent := `#!/usr/bin/env python3
 import os
@@ -249,7 +248,7 @@ if __name__ == "__main__":
     main()`
 
 	fs.AddFile("/base/calculator.py", []byte(originalContent))
-	
+
 	// Complex diff that adds imports, modifies methods, and adds new functionality
 	deltagramContent := `--====DELTAGRAM_0123456789abcdef0123456789abcdef====
 Content-Location: calculator.py
@@ -303,7 +302,7 @@ Delta-Operation: content
 	}
 
 	modified := string(modifiedContent)
-	
+
 	// Check that new imports were added
 	if !strings.Contains(modified, "import math") {
 		t.Error("Should contain 'import math'")
@@ -311,7 +310,7 @@ Delta-Operation: content
 	if !strings.Contains(modified, "from typing import List") {
 		t.Error("Should contain 'from typing import List'")
 	}
-	
+
 	// Check that existing methods were modified
 	if !strings.Contains(modified, "ADD: {a} + {b} = {result}") {
 		t.Error("Add method should be modified with ADD prefix")
@@ -319,7 +318,7 @@ Delta-Operation: content
 	if !strings.Contains(modified, "SUB: {a} - {b} = {result}") {
 		t.Error("Subtract method should be modified with SUB prefix")
 	}
-	
+
 	// Check that new method was added
 	if !strings.Contains(modified, "def multiply(self, a, b):") {
 		t.Error("Should contain new multiply method")
@@ -333,9 +332,9 @@ func TestIntegration_FlexibleBoundaryIdentifiers(t *testing.T) {
 	parser := parser.NewParser()
 	fs := testutil.NewMockFileSystem()
 	applier := operations.NewApplier(fs)
-	
+
 	fs.AddDir("/base/src")
-	
+
 	// Use the flexible boundary identifier format from the example
 	identifier := "voice456sample789012345678901234ef"
 	deltagramContent := `--====DELTAGRAM_` + identifier + `====
@@ -619,7 +618,7 @@ Delta-Operation: content
 	}
 
 	result := string(resultContent)
-	
+
 	// Check that new version was inserted
 	if !strings.Contains(result, "## Version 1.1.0") {
 		t.Error("New version section was not inserted")
@@ -627,7 +626,7 @@ Delta-Operation: content
 	if !strings.Contains(result, "- Added user authentication") {
 		t.Error("Authentication feature was not added")
 	}
-	
+
 	// Verify original content is preserved
 	if !strings.Contains(result, "## Version 1.0.0") {
 		t.Error("Original version section was lost")

@@ -26,24 +26,24 @@ func (h *ContentHandler) CanHandle(operation string) bool {
 // Apply applies content modifications using unified diff format
 func (h *ContentHandler) Apply(fs FileSystem, baseDir string, part parser.DeltagramPart) error {
 	filePath := ResolveFilePath(baseDir, part.ContentLocation)
-	
+
 	// Check if file exists
 	if _, err := fs.Stat(filePath); os.IsNotExist(err) {
 		return fmt.Errorf("cannot apply content operation to non-existent file: %s (use 'create' operation instead)", part.ContentLocation)
 	}
-	
+
 	// Read existing file
 	existingContent, err := fs.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to read existing file: %v", err)
 	}
-	
+
 	// Apply unified diff
 	modifiedContent, err := h.applyUnifiedDiff(string(existingContent), part.Content)
 	if err != nil {
 		return fmt.Errorf("failed to apply diff: %v", err)
 	}
-	
+
 	// Write modified content back
 	if err := fs.WriteFile(filePath, []byte(modifiedContent), 0644); err != nil {
 		return fmt.Errorf("failed to write modified file: %v", err)
@@ -56,56 +56,56 @@ func (h *ContentHandler) Apply(fs FileSystem, baseDir string, part parser.Deltag
 func (h *ContentHandler) applyUnifiedDiff(original, diff string) (string, error) {
 	originalLines := strings.Split(original, "\n")
 	diffLines := strings.Split(diff, "\n")
-	
+
 	// Parse all hunks first
 	hunks, err := h.ParseAllHunks(diffLines)
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Apply hunks sequentially with automatic offset calculation
 	// Each hunk references original file line numbers, but we apply to evolving result
 	result := make([]string, len(originalLines))
 	copy(result, originalLines)
-	
+
 	// Track mapping from original line numbers to current result line numbers
 	// lineMapping[originalLineIndex] = currentResultLineIndex
 	lineMapping := make([]int, len(originalLines))
 	for i := range lineMapping {
 		lineMapping[i] = i
 	}
-	
+
 	for _, hunk := range hunks {
 		// Hunk references original file line numbers
 		originalStart := hunk.Header.OldStart - 1 // Convert to 0-based indexing
 		if originalStart < 0 || originalStart >= len(originalLines) {
 			return "", fmt.Errorf("hunk refers to line %d but original file has %d lines", hunk.Header.OldStart, len(originalLines))
 		}
-		
+
 		// Find the best position for this hunk in the original file (with fuzzy matching)
 		bestPosition, err := h.findBestHunkPosition(originalLines, hunk, originalStart)
 		if err != nil {
 			return "", fmt.Errorf("failed to find position for hunk at line %d: %v", hunk.Header.OldStart, err)
 		}
-		
+
 		// Update originalStart to the best position found
 		originalStart = bestPosition
-		
+
 		// Find where this original line is now located in the current result
 		currentStart := lineMapping[originalStart]
-		
+
 		// Apply the hunk at the current position
 		newResult, netLineChange, err := h.applyHunkAtPosition(result, hunk, currentStart)
 		if err != nil {
 			return "", fmt.Errorf("failed to apply hunk at line %d: %v", hunk.Header.OldStart, err)
 		}
-		
+
 		// Update line mapping for all lines after the affected region
 		h.updateLineMapping(lineMapping, originalStart, hunk.Header.OldCount, netLineChange)
-		
+
 		result = newResult
 	}
-	
+
 	return strings.Join(result, "\n"), nil
 }
 
@@ -119,7 +119,7 @@ type HunkHeader struct {
 
 // HunkOperation represents a single operation within a hunk
 type HunkOperation struct {
-	Type    byte   // '+', '-', or ' '
+	Type    byte // '+', '-', or ' '
 	Content string
 }
 
@@ -133,16 +133,16 @@ func (h *ContentHandler) parseHunkHeader(line string) (*HunkHeader, error) {
 	// Example: @@ -1,5 +1,8 @@
 	re := regexp.MustCompile(`^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@`)
 	matches := re.FindStringSubmatch(line)
-	
+
 	if len(matches) < 4 {
 		return nil, fmt.Errorf("invalid hunk header format")
 	}
-	
+
 	oldStart, err := strconv.Atoi(matches[1])
 	if err != nil {
 		return nil, fmt.Errorf("invalid old start: %v", err)
 	}
-	
+
 	oldCount := 1
 	if matches[2] != "" {
 		oldCount, err = strconv.Atoi(matches[2])
@@ -150,12 +150,12 @@ func (h *ContentHandler) parseHunkHeader(line string) (*HunkHeader, error) {
 			return nil, fmt.Errorf("invalid old count: %v", err)
 		}
 	}
-	
+
 	newStart, err := strconv.Atoi(matches[3])
 	if err != nil {
 		return nil, fmt.Errorf("invalid new start: %v", err)
 	}
-	
+
 	newCount := 1
 	if len(matches) > 4 && matches[4] != "" {
 		newCount, err = strconv.Atoi(matches[4])
@@ -163,7 +163,7 @@ func (h *ContentHandler) parseHunkHeader(line string) (*HunkHeader, error) {
 			return nil, fmt.Errorf("invalid new count: %v", err)
 		}
 	}
-	
+
 	return &HunkHeader{
 		OldStart: oldStart,
 		OldCount: oldCount,
@@ -175,17 +175,17 @@ func (h *ContentHandler) parseHunkHeader(line string) (*HunkHeader, error) {
 // ParseAllHunks parses all hunks from the diff lines
 func (h *ContentHandler) ParseAllHunks(diffLines []string) ([]*ParsedHunk, error) {
 	var hunks []*ParsedHunk
-	
+
 	for i := 0; i < len(diffLines); i++ {
 		line := diffLines[i]
-		
+
 		if strings.HasPrefix(line, "@@") {
 			// Parse hunk header
 			header, err := h.parseHunkHeader(line)
 			if err != nil {
 				return nil, fmt.Errorf("invalid hunk header: %v", err)
 			}
-			
+
 			// Parse hunk operations
 			var operations []HunkOperation
 			i++ // Skip hunk header
@@ -195,7 +195,7 @@ func (h *ContentHandler) ParseAllHunks(diffLines []string) ([]*ParsedHunk, error
 					i++
 					continue
 				}
-				
+
 				if hunkLine[0] == '+' || hunkLine[0] == '-' || hunkLine[0] == ' ' {
 					operations = append(operations, HunkOperation{
 						Type:    hunkLine[0],
@@ -205,25 +205,20 @@ func (h *ContentHandler) ParseAllHunks(diffLines []string) ([]*ParsedHunk, error
 				i++
 			}
 			i-- // Adjust for outer loop increment
-			
+
 			hunks = append(hunks, &ParsedHunk{
 				Header:     header,
 				Operations: operations,
 			})
 		}
 	}
-	
+
 	return hunks, nil
 }
-
-
-
-// (Removed unused: validateHunkContext, extractReplacementContent, hasMoreOldLines)
 
 // validateHunkAgainstOriginal validates that hunk context matches the original file
 func (h *ContentHandler) validateHunkAgainstOriginal(originalLines []string, hunk *ParsedHunk, originalStart int) error {
 	originalPos := originalStart
-	
 	for _, op := range hunk.Operations {
 		switch op.Type {
 		case ' ':
@@ -231,8 +226,8 @@ func (h *ContentHandler) validateHunkAgainstOriginal(originalLines []string, hun
 			if originalPos >= len(originalLines) {
 				return fmt.Errorf("context line extends beyond original file")
 			}
-			if !h.LinesEqual(originalLines[originalPos], op.Content) {
-				return fmt.Errorf("context mismatch at original line %d: expected %q, got %q", 
+			if !linesEqual(originalLines[originalPos], op.Content) {
+				return fmt.Errorf("context mismatch at original line %d: expected %q, got %q",
 					originalPos+1, op.Content, originalLines[originalPos])
 			}
 			originalPos++
@@ -241,8 +236,8 @@ func (h *ContentHandler) validateHunkAgainstOriginal(originalLines []string, hun
 			if originalPos >= len(originalLines) {
 				return fmt.Errorf("line to remove extends beyond original file")
 			}
-			if !h.LinesEqual(originalLines[originalPos], op.Content) {
-				return fmt.Errorf("removal mismatch at original line %d: expected %q, got %q", 
+			if !linesEqual(originalLines[originalPos], op.Content) {
+				return fmt.Errorf("removal mismatch at original line %d: expected %q, got %q",
 					originalPos+1, op.Content, originalLines[originalPos])
 			}
 			originalPos++
@@ -251,8 +246,14 @@ func (h *ContentHandler) validateHunkAgainstOriginal(originalLines []string, hun
 			continue
 		}
 	}
-	
 	return nil
+}
+
+// linesEqual compares two lines ignoring line ending differences
+func linesEqual(line1, line2 string) bool {
+	normalized1 := strings.ReplaceAll(line1, "\r", "")
+	normalized2 := strings.ReplaceAll(line2, "\r", "")
+	return normalized1 == normalized2
 }
 
 // applyHunkAtPosition applies a hunk at the specified current position
@@ -265,20 +266,20 @@ func (h *ContentHandler) applyHunkAtPosition(result []string, hunk *ParsedHunk, 
 				insertLines = append(insertLines, op.Content)
 			}
 		}
-		
+
 		newResult := make([]string, 0, len(result)+len(insertLines))
 		newResult = append(newResult, result[:currentStart]...)
 		newResult = append(newResult, insertLines...)
 		newResult = append(newResult, result[currentStart:]...)
-		
+
 		return newResult, len(insertLines), nil
 	}
-	
-	// For replacements, build the new content 
+
+	// For replacements, build the new content
 	// Only include lines that should be in the replacement (within OldCount range)
 	replacementLines := make([]string, 0)
 	oldLinesProcessed := 0
-	
+
 	for _, op := range hunk.Operations {
 		switch op.Type {
 		case ' ':
@@ -300,21 +301,21 @@ func (h *ContentHandler) applyHunkAtPosition(result []string, hunk *ParsedHunk, 
 			oldLinesProcessed++
 		}
 	}
-	
+
 	// Replace exactly OldCount lines with the replacement content
 	endPos := currentStart + hunk.Header.OldCount
 	if endPos > len(result) {
 		endPos = len(result)
 	}
-	
+
 	newResult := make([]string, 0, len(result)+len(replacementLines)-(endPos-currentStart))
 	newResult = append(newResult, result[:currentStart]...)
 	newResult = append(newResult, replacementLines...)
 	newResult = append(newResult, result[endPos:]...)
-	
+
 	// Calculate net line change
 	netChange := len(replacementLines) - hunk.Header.OldCount
-	
+
 	return newResult, netChange, nil
 }
 
@@ -324,10 +325,10 @@ func (h *ContentHandler) findBestHunkPosition(originalLines []string, hunk *Pars
 	if h.validateHunkAgainstOriginal(originalLines, hunk, suggestedStart) == nil {
 		return suggestedStart, nil
 	}
-	
+
 	// If exact match fails, try positions within a reasonable range
 	searchRange := 5 // Search +/- 5 lines around the suggested position
-	
+
 	// Try positions before the suggested start
 	for offset := 1; offset <= searchRange; offset++ {
 		// Try position before
@@ -336,7 +337,7 @@ func (h *ContentHandler) findBestHunkPosition(originalLines []string, hunk *Pars
 				return suggestedStart - offset, nil
 			}
 		}
-		
+
 		// Try position after
 		if suggestedStart+offset < len(originalLines) {
 			if h.validateHunkAgainstOriginal(originalLines, hunk, suggestedStart+offset) == nil {
@@ -344,7 +345,7 @@ func (h *ContentHandler) findBestHunkPosition(originalLines []string, hunk *Pars
 			}
 		}
 	}
-	
+
 	// If no fuzzy match found, return the original error
 	return suggestedStart, h.validateHunkAgainstOriginal(originalLines, hunk, suggestedStart)
 }
